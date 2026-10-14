@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Rotational Grazing as a Control Loop: Live Simulation</title>
+<title>Rotational Grazing: Live Simulation</title>
 <style>
 :root {
   --paper: #F6F1E6; --panel: #FFFDF8; --ink: #2A2A2A; --muted: #666666; --rule: #CFC6B3; --rule2: #E4DCCB;
@@ -217,9 +217,9 @@ body:not([data-level="learn"]) .lv-learn, body:not([data-level="research"]) .lv-
 <body>
 <main>
 <header>
-  <h1>Rotational grazing as a control loop: live simulation</h1>
+  <h1>Rotational grazing: live simulation</h1>
   <p class="lede lv-explore">Cattle graze one paddock at a time, then move to the next. Every morning someone checks the grass, decides, and acts. Can you keep the grass healthy and the cattle growing all season?</p>
-  <p class="lede lv-hide-explore" style="margin-bottom:0">The grazing control loop, running one day per tick. The controller sees only sensor readings and decides each morning whether the herd stays or moves. Run it on a simulated season, or on your own field records. Click any block for a plain explanation.</p>
+  <p class="lede lv-hide-explore" style="margin-bottom:0">The grazing decision, one day at a time. The move rule sees only the measurements and decides each morning whether the herd stays or moves. Run it on a simulated season, or on your own field records. Click any block for a plain explanation.</p>
   <nav class="levels" aria-label="Level">
     <span class="small muted">Level:</span>
     <button type="button" data-level="explore" aria-pressed="false">Explore</button>
@@ -244,10 +244,10 @@ body:not([data-level="learn"]) .lv-learn, body:not([data-level="research"]) .lv-
       <g class="bx" id="exC"><rect x="278" y="198" width="222" height="112"/><text class="t" x="292" y="224">3. Decide</text><text class="v" id="exC1" x="292" y="250"></text><text class="v" id="exC2" x="292" y="272"></text><text class="v" id="exC3" x="292" y="294"></text></g>
       <g class="bx" id="exD"><rect x="20" y="198" width="222" height="112"/><text class="t" x="34" y="224">4. Act</text><text class="v" id="exD1" x="34" y="250"></text><text class="v" id="exD2" x="34" y="272"></text><text class="v" id="exD3" x="34" y="294"></text></g>
     </svg>
-    <p class="cap">Measure, decide, act, and measure again the next morning. Engineers call this a control loop. A home thermostat works the same way.</p>
+    <p class="cap">Measure, decide, act, and measure again the next morning. A home thermostat works the same way: it measures, decides, and measures again.</p>
   </div>
   <div class="fig dwrap lv-hide-explore">
-    <svg id="diagram" viewBox="0 0 800 432" role="img" aria-label="Live control loop diagram">
+    <svg id="diagram" viewBox="0 0 800 432" role="img" aria-label="Grazing loop diagram">
       <defs>
         <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path class="ahead" d="M0,0 L10,5 L0,10 z"/></marker>
         <marker id="ahb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path class="ahead fb" d="M0,0 L10,5 L0,10 z"/></marker>
@@ -255,91 +255,86 @@ body:not([data-level="learn"]) .lv-learn, body:not([data-level="research"]) .lv-
       </defs>
       <!-- arrows -->
       <path id="a-r" class="sig live" d="M176,134 L212,134" marker-end="url(#ah)"/>
-      <text class="alab" x="194" y="126" text-anchor="middle">r</text>
       <path id="a-dec" class="sig live" d="M384,134 L418,134" marker-end="url(#ah)"/>
       <path id="a-u" class="sig live" d="M530,134 L564,134" marker-end="url(#ah)"/>
-      <text class="alab" x="547" y="126" text-anchor="middle">u(k)</text>
       <path id="a-d" class="sig live" d="M675,56 L675,76" marker-end="url(#ah)"/>
-      <text class="alab" x="684" y="71">d(k)</text>
       <path id="a-x" class="sig live" d="M675,190 L675,224" marker-end="url(#ah)"/>
-      <text class="alab" x="684" y="212">x(k)</text>
       <path id="a-y" class="sig live" d="M566,282 L532,282" marker-end="url(#ah)"/>
-      <text class="alab" x="549" y="274" text-anchor="middle">y(k)</text>
       <path id="a-fb" class="sig fb live" d="M300,224 L300,192" marker-end="url(#ahb)"/>
       <text id="a-fb-l" class="alab" x="308" y="212">x&#770;(k), P(k)</text>
       <path id="a-o1" class="sig dash" d="M372,358 L372,340" marker-end="url(#ahd)"/>
       <text class="alab" x="380" y="354">&#952;</text>
       <path id="a-o2" class="sig dash" d="M96,358 L96,192" marker-end="url(#ahd)"/>
-      <text class="alab" x="104" y="300">retune</text>
-      <text class="alab" x="400" y="210" text-anchor="middle">daily loop</text>
+      <text class="alab" x="104" y="300">adjust</text>
+      <text class="alab" x="470" y="210" text-anchor="middle">daily decision</text>
 
       <!-- disturbances -->
-      <g id="b-dist" class="blk" tabindex="0" role="button" aria-label="Disturbances">
+      <g id="b-dist" class="blk" tabindex="0" role="button" aria-label="Outside influences">
         <rect class="box" x="566" y="8" width="218" height="48"/>
-        <text class="t" x="576" y="27">Disturbances d(k)</text>
+        <text class="t" x="576" y="27">Outside influences</text>
         <text id="v-dist" class="v" x="576" y="46">weather</text>
       </g>
       <!-- setpoints -->
-      <g id="b-set" class="blk" tabindex="0" role="button" aria-label="Setpoints">
+      <g id="b-set" class="blk" tabindex="0" role="button" aria-label="Management targets">
         <rect class="box" x="16" y="78" width="160" height="112"/>
-        <text class="t" x="26" y="98">Setpoints r</text>
+        <text class="t" x="26" y="98">Management targets</text>
         <text id="v-set1" class="v" x="26" y="118">B* = 1500 kg/ha</text>
         <text id="v-set2" class="m" x="26" y="134">(1338 lb/ac)</text>
         <text id="v-set3" class="v" x="26" y="154">&#948; = 30 %</text>
         <text id="v-set4" class="v" x="26" y="174">d: 2 to 7 d, n = 5</text>
       </g>
       <!-- controller -->
-      <g id="b-ctrl" class="blk" tabindex="0" role="button" aria-label="Controller">
+      <g id="b-ctrl" class="blk" tabindex="0" role="button" aria-label="Move decision">
         <rect class="box" x="214" y="78" width="170" height="112"/>
-        <text class="t" x="224" y="98">Controller</text>
-        <text id="v-ctrl1" class="v" x="224" y="118">Dual trigger</text>
-        <text id="v-ctrl2" class="v" x="224" y="138">closed loop</text>
+        <text class="t" x="224" y="98">Move decision</text>
+        <text id="v-ctrl1" class="v" x="224" y="118">Residual and ADG rule</text>
+        <text id="v-ctrl2" class="v" x="224" y="138">monitoring-based</text>
         <text id="v-ctrl3" class="v" x="224" y="160">Day 0: waiting</text>
-        <text id="v-ctrl4" class="m" x="224" y="178">grass no, gain no</text>
+        <text id="v-ctrl4" class="m" x="224" y="178">residual no, ADG no</text>
       </g>
       <!-- actuator -->
-      <g id="b-act" class="blk" tabindex="0" role="button" aria-label="Actuator">
+      <g id="b-act" class="blk" tabindex="0" role="button" aria-label="Gate">
         <rect class="box" x="420" y="94" width="110" height="80"/>
-        <text class="t" x="430" y="114">Actuator</text>
-        <text id="v-act1" class="v" x="430" y="136">u = stay</text>
-        <text id="v-act2" class="m" x="430" y="156">gate closed</text>
+        <text class="t" x="430" y="114">Gate</text>
+        <text id="v-act1" class="v" x="430" y="136">gate closed</text>
+        <text id="v-act2" class="m" x="430" y="156">herd stays</text>
       </g>
       <!-- plant -->
-      <g id="b-plant" class="blk" tabindex="0" role="button" aria-label="Plant: paddock and herd">
+      <g id="b-plant" class="blk" tabindex="0" role="button" aria-label="Paddock and herd">
         <rect class="box" x="566" y="78" width="218" height="112"/>
-        <text class="t" x="576" y="98">Plant: paddock and herd</text>
-        <text id="v-pl1" class="v" x="576" y="118">Paddock 1, day 0 of stay</text>
+        <text class="t" x="576" y="98">Paddock and herd</text>
+        <text id="v-pl1" class="v" x="576" y="118">Paddock 1, day 0 of grazing</text>
         <text id="v-pl2" class="v" x="576" y="138">B = 0 kg/ha (true)</text>
         <text id="v-pl3" class="v" x="576" y="158">W = 0 kg (true, herd mean)</text>
         <text id="v-pl4" class="m" x="576" y="178">intake 0 kg DM/head/d</text>
       </g>
       <!-- sensors -->
-      <g id="b-sens" class="blk" tabindex="0" role="button" aria-label="Sensors">
+      <g id="b-sens" class="blk" tabindex="0" role="button" aria-label="Measurements">
         <rect class="box" x="566" y="226" width="218" height="112"/>
-        <text class="t" x="576" y="246">Sensors, with noise v</text>
+        <text class="t" x="576" y="246">Measurements, with error</text>
         <text id="v-s1" class="v" x="576" y="268">y&#8321; map: none today</text>
-        <text id="v-s2" class="v" x="576" y="290">y&#8322; camera: 0 kg</text>
-        <text id="v-s3" class="m" x="576" y="312">y&#8323; tags: logged, not used in v1</text>
+        <text id="v-s2" class="v" x="576" y="290">y&#8322; walk-over: 0 kg</text>
+        <text id="v-s3" class="m" x="576" y="312">y&#8323; tags: logged, not used</text>
         <text id="v-s4" class="m" x="576" y="330">y&#8322; = W + b + v&#8322;</text>
       </g>
       <!-- estimator -->
-      <g id="b-est" class="blk" tabindex="0" role="button" aria-label="Estimator">
+      <g id="b-est" class="blk" tabindex="0" role="button" aria-label="Best estimate">
         <rect class="box" x="214" y="226" width="318" height="112"/>
-        <text class="t" x="224" y="246">Estimator x&#770;(k), P(k)</text>
+        <text class="t" x="224" y="246">Best estimate</text>
         <text id="v-e1" class="v" x="224" y="268">B&#770; = 0 &#177; 0 kg/ha</text>
         <text id="v-e2" class="v" x="224" y="290">&#285; = n/a kg/d over n = 5 d</text>
-        <text id="v-e3" class="v" x="224" y="310">move if &#285; &#8804; 0 kg/d</text>
+        <text id="v-e3" class="v" x="224" y="310">ADG check: n/a</text>
         <text id="v-e4" class="m" x="224" y="328">regrowth r&#770; = 0 kg/ha/d</text>
       </g>
       <!-- outer loop, inactive -->
-      <g id="b-outer" class="blk outer" tabindex="0" role="button" aria-label="Outer calibration loop, inactive">
+      <g id="b-outer" class="blk outer" tabindex="0" role="button" aria-label="Check once per rotation">
         <rect class="box" x="16" y="360" width="768" height="64"/>
-        <text class="t" x="28" y="380">Outer loop, once per rotation cycle: year 2 of project (inactive in v1)</text>
-        <text id="v-o1" class="m" x="28" y="400">Scale reference: none yet. n-alkane: not simulated in v1.</text>
-        <text class="m" x="28" y="416">Calibration would compare references with estimates, e(k), and update &#952; (utilization, regrowth, forage-to-gain constants).</text>
+        <text class="t" x="28" y="380">Check once per rotation (off)</text>
+        <text id="v-o1" class="m" x="28" y="400">Scale weights: none yet. n-alkane intake: not simulated.</text>
+        <text class="m" x="28" y="416">Calibration compares reference measurements with estimates, e(k), and would update &#952; (utilization, regrowth, gain per unit of forage).</text>
       </g>
     </svg>
-    <p class="cap"><b>Control loop, live.</b> Solid lines are the daily loop; the burgundy line is the feedback path. Dashed lines are the slower calibration loop, shown but not active in this version.</p>
+    <p class="cap"><b>Grazing loop, live.</b> Solid lines are the daily decision; the burgundy line carries the best estimate to the move decision. Dashed lines are the check once per rotation, shown but not active in this version.</p>
   </div>
 
   <div class="fig ring">
@@ -406,24 +401,24 @@ body:not([data-level="learn"]) .lv-learn, body:not([data-level="research"]) .lv-
     <div class="scn" data-only="sim">
       <button type="button" data-scn="normal">Normal season</button>
       <button type="button" data-scn="dry">Dry spell</button>
-      <button type="button" data-scn="noisy">High sensor noise</button>
+      <button type="button" data-scn="noisy">Large measurement error</button>
     </div>
-    <div class="goal lv-learn small" data-only="sim"><b>Try this.</b> (1) Run the comparison below. Which rule protects the grass better? (2) Load High sensor noise, then raise d&#8344;&#7522;&#8345; from 1 to 3. Why do wrong moves drop? (3) Watch Plot 2b. Why is the gain band so wide? (4) Run a whole season. Why do stays get shorter in summer?</div>
+    <div class="goal lv-learn small" data-only="sim"><b>Try this.</b> (1) Run the comparison below. Which rule protects the grass better? (2) Load Large measurement error, then raise d&#8344;&#7522;&#8345; from 1 to 3. Why do wrong moves drop? (3) Watch Plot 2b. Why is the gain band so wide? (4) Run a whole season. Why do grazing periods get shorter in summer?</div>
     <fieldset>
-      <legend>Controller</legend>
-      <div class="radio" role="radiogroup" aria-label="Controller mode">
-        <label><input type="radio" name="mode" value="dual"> Dual trigger (closed loop)</label>
-        <label><input type="radio" name="mode" value="calendar"> Calendar (open loop)</label>
+      <legend>Move decision</legend>
+      <div class="radio" role="radiogroup" aria-label="Move rule">
+        <label><input type="radio" name="mode" value="dual"> Residual and ADG rule (monitoring)</label>
+        <label><input type="radio" name="mode" value="calendar"> Fixed rotation (calendar)</label>
       </div>
-      <div class="f" id="calRow"><label for="calendarDays"><span>Calendar stay, days</span><span id="o-calendarDays"></span></label>
-        <input type="range" id="calendarDays" min="1" max="10" step="1"><span class="g">Handover scenario: 4-day stays, 36-day rest.</span></div>
+      <div class="f" id="calRow"><label for="calendarDays"><span>Fixed grazing period, days</span><span id="o-calendarDays"></span></label>
+        <input type="range" id="calendarDays" min="1" max="10" step="1"><span class="g">Scenario: 4-day grazing periods, 36-day rest periods.</span></div>
     </fieldset>
     <fieldset>
-      <legend>Setpoints (apply from the next morning)</legend>
-      <div class="f"><label for="floor"><span>Residual floor B*</span><span id="o-floor"></span></label>
+      <legend>Management targets (apply from the next morning)</legend>
+      <div class="f"><label for="floor"><span>Post-grazing residual target B*</span><span id="o-floor"></span></label>
         <input type="range" id="floor" min="1000" max="2000" step="50">
         <span class="g">Allowed 1000 to 2000 kg DM/ha. Fescue guideline 1200 to 1500 lb DM/ac (1345 to 1681 kg/ha); grass-clover 1500 to 1800 lb/ac.</span></div>
-      <div class="f"><label for="delta"><span>Gain drop &#948;</span><span id="o-delta"></span></label>
+      <div class="f"><label for="delta"><span>ADG decline &#948;</span><span id="o-delta"></span></label>
         <input type="range" id="delta" min="10" max="40" step="5">
         <span class="g">Allowed 10 to 40 percent. Calculator guideline 25 to 40 percent.</span></div>
       <div class="row2">
@@ -432,14 +427,14 @@ body:not([data-level="learn"]) .lv-learn, body:not([data-level="research"]) .lv-
         <div class="f"><label for="dmax"><span>d&#8344;&#8336;&#8339;</span><span id="o-dmax"></span></label>
           <input type="range" id="dmax" min="3" max="10" step="1"><span class="g">3 to 10 days</span></div>
       </div>
-      <div class="f"><label for="window"><span>Gain window n</span><span id="o-window"></span></label>
+      <div class="f"><label for="window"><span>ADG window n</span><span id="o-window"></span></label>
         <input type="range" id="window" min="3" max="5" step="1"><span class="g">3 to 5 days. Longer is steadier but later.</span></div>
       <div class="note" id="clampNote" role="status"></div>
     </fieldset>
     <fieldset class="lv-research">
-      <legend>Estimator options</legend>
-      <label class="chk"><input type="checkbox" id="calibrate"><span>Outer loop on: once per 40-day cycle, rescale each sensor by its mean ratio to the clip means so far</span></label>
-      <label class="chk"><input type="checkbox" id="useClips"><span>Use clips in the estimator (off keeps clips as an independent reference)</span></label>
+      <legend>Estimate options</legend>
+      <label class="chk"><input type="checkbox" id="calibrate"><span>Check on: every 40 days, rescale each sensor by its mean ratio to the clip means so far</span></label>
+      <label class="chk"><input type="checkbox" id="useClips"><span>Use clips in the estimate (off keeps clips as an independent reference)</span></label>
     </fieldset>
     <fieldset data-only="sim" class="lv-research">
       <legend>Sensor errors measured in the field</legend>
@@ -463,14 +458,14 @@ body:not([data-level="learn"]) .lv-learn, body:not([data-level="research"]) .lv-
     </fieldset>
     <fieldset data-only="sim">
       <legend>Season and sensors (restart the run)</legend>
-      <div class="f"><label for="bioSensor"><span>Biomass sensor the controller uses</span></label>
+      <div class="f"><label for="bioSensor"><span>Forage mass sensor the move rule uses</span></label>
         <select id="bioSensor"><option value="map">UAV or rover map</option><option value="plate">Plate meter</option><option value="visual">Visual estimate</option></select>
         <span class="g">Maps and plate: turn-in, day 2, exit. Visual: every morning. Clips (12 quadrats) at every turn-in and exit, as the reference.</span></div>
       <div class="f"><label for="weather"><span>Weather</span></label>
         <select id="weather"><option value="average">Average</option><option value="dry">Dry: 60 percent of rain, +1 &#176;C</option><option value="wet">Wet: 140 percent of rain</option><option value="record">Historical record (one year)</option></select></div>
       <div class="f" id="yearRow"><label for="recordYear"><span>Record year</span></label><select id="recordYear"></select>
         <span class="g" id="yearNote">Load a weather record under Historical weather.</span></div>
-      <div class="f"><label for="noiseMap"><span>Biomass sensor error (y&#8321;)</span></label>
+      <div class="f"><label for="noiseMap"><span>Forage mass sensor error (y&#8321;)</span></label>
         <select id="noiseMap"><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select></div>
       <div class="f"><label for="noiseCamera"><span>Camera error (v&#8322;)</span></label>
         <select id="noiseCamera"><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select></div>
@@ -482,14 +477,14 @@ body:not([data-level="learn"]) .lv-learn, body:not([data-level="research"]) .lv-
   </div>
 
   <div>
-    <div class="plot"><div class="ptitle">Plot 1. Standing biomass in the grazed paddock, kg DM/ha</div>
-      <div class="legend"><span data-only="sim"><i class="sw" style="border-color:var(--navy)"></i>true (hidden from controller)</span><span><i class="sw" style="border-color:var(--burg);border-top-style:dashed"></i>estimate B&#770; with 95 percent band</span><span><svg width="12" height="10" style="margin-right:4px"><rect x="2" y="1" width="8" height="8" fill="var(--ochre)"/></svg>map</span><span><svg width="12" height="10" style="margin-right:4px"><rect x="2" y="1" width="8" height="8" fill="var(--forest)"/></svg>plate</span><span><svg width="12" height="10" style="margin-right:4px"><rect x="2" y="1" width="8" height="8" fill="var(--muted)"/></svg>visual (open square: exit reading)</span><span><svg width="12" height="12" style="margin-right:4px"><line x1="6" y1="0" x2="6" y2="12" stroke="var(--navy)"/><circle cx="6" cy="6" r="3" fill="var(--navy)"/></svg>clip mean, 95 percent CI (reference)</span><span><i class="sw" style="border-color:var(--forest);border-top-style:dashed"></i>floor B*</span></div>
+    <div class="plot"><div class="ptitle">Plot 1. Standing forage mass in the grazed paddock, kg DM/ha</div>
+      <div class="legend"><span data-only="sim"><i class="sw" style="border-color:var(--navy)"></i>true (hidden from the move rule)</span><span><i class="sw" style="border-color:var(--burg);border-top-style:dashed"></i>estimate B&#770; with 95 percent band</span><span><svg width="12" height="10" style="margin-right:4px"><rect x="2" y="1" width="8" height="8" fill="var(--ochre)"/></svg>map</span><span><svg width="12" height="10" style="margin-right:4px"><rect x="2" y="1" width="8" height="8" fill="var(--forest)"/></svg>plate</span><span><svg width="12" height="10" style="margin-right:4px"><rect x="2" y="1" width="8" height="8" fill="var(--muted)"/></svg>visual (open square: exit reading)</span><span><svg width="12" height="12" style="margin-right:4px"><line x1="6" y1="0" x2="6" y2="12" stroke="var(--navy)"/><circle cx="6" cy="6" r="3" fill="var(--navy)"/></svg>clip mean, 95 percent CI (reference)</span><span><i class="sw" style="border-color:var(--forest);border-top-style:dashed"></i>residual target B*</span></div>
       <svg id="p1" height="230"></svg></div>
     <div class="plot"><div class="ptitle">Plot 2a. Herd-mean weight, kg</div>
-      <div class="legend"><span><svg width="12" height="10" style="vertical-align:middle;margin-right:4px"><circle cx="6" cy="5" r="3" fill="none" stroke="var(--navy)" stroke-width="1.2"/></svg>camera, daily herd mean (seen by the controller)</span><span data-only="sim"><i class="sw" style="border-color:var(--muted)"></i>true herd mean</span><span><svg width="12" height="10" style="vertical-align:middle;margin-right:4px"><rect x="2" y="1" width="8" height="8" fill="var(--ochre)"/></svg>scale reference (not used in decisions)</span></div>
+      <div class="legend"><span><svg width="12" height="10" style="vertical-align:middle;margin-right:4px"><circle cx="6" cy="5" r="3" fill="none" stroke="var(--navy)" stroke-width="1.2"/></svg>camera, daily herd mean (seen by the move rule)</span><span data-only="sim"><i class="sw" style="border-color:var(--muted)"></i>true herd mean</span><span><svg width="12" height="10" style="vertical-align:middle;margin-right:4px"><rect x="2" y="1" width="8" height="8" fill="var(--ochre)"/></svg>scale reference (not used in decisions)</span></div>
       <svg id="p2" height="170"></svg></div>
-    <div class="plot"><div class="ptitle">Plot 2b. Rolling gain and the &#948; threshold, kg/day</div>
-      <div class="legend"><span><i class="sw" style="border-color:var(--burg)"></i>estimate &#285; with 95 percent band</span><span data-only="sim"><i class="sw" style="border-color:var(--muted);border-top-style:dashed"></i>true rolling gain</span><span><i class="sw" style="border-color:var(--ochre)"></i>threshold (1 - &#948;) &#285;&#8344;&#8336;&#8339;</span></div>
+    <div class="plot"><div class="ptitle">Plot 2b. ADG and the &#948; threshold, kg/day</div>
+      <div class="legend"><span><i class="sw" style="border-color:var(--burg)"></i>estimate &#285; with 95 percent band</span><span data-only="sim"><i class="sw" style="border-color:var(--muted);border-top-style:dashed"></i>true ADG</span><span><i class="sw" style="border-color:var(--ochre)"></i>threshold (1 - &#948;) &#285;&#8344;&#8336;&#8339;</span></div>
       <svg id="p3" height="170"></svg></div>
     <div class="radio small"><label><input type="radio" name="view" value="all"> Whole season</label><label><input type="radio" name="view" value="60"> Last 60 days</label></div>
   </div>
@@ -506,7 +501,7 @@ body:not([data-level="learn"]) .lv-learn, body:not([data-level="research"]) .lv-
 
 <section class="rule-top" id="fieldSec" data-only="field">
   <h2>Field records</h2>
-  <p class="small">Every reading is one row: date, paddock, type, value. Enter rows below, paste a CSV, or load a file. The same file format can come straight from the lab's processing pipelines. Press Apply to replay the records through the loop. The controller then gives its recommendation for each morning, next to what was actually done.</p>
+  <p class="small">Every reading is one row: date, paddock, type, value. Enter rows below, paste a CSV, or load a file. The same file format can come straight from the lab's processing pipelines. Press Apply to replay the records through the move rule. The move rule then gives its recommendation for each morning, next to what was actually done.</p>
   <div class="form" id="addForm">
     <label>Date<input type="date" id="rDate"></label>
     <label>Paddock<input type="number" id="rPad" min="1" step="1" value="1"></label>
@@ -521,7 +516,7 @@ body:not([data-level="learn"]) .lv-learn, body:not([data-level="research"]) .lv-
   <div class="form" id="clipForm">
     <label>Date<input type="date" id="cDate"></label>
     <label>Paddock<input type="number" id="cPad" min="1" step="1" value="1"></label>
-    <label>When<select id="cRole"><option value="pre">before grazing (turn-in)</option><option value="post">after grazing (exit)</option><option value="mid">mid-stay</option><option value="rest">rest paddock</option></select></label>
+    <label>When<select id="cRole"><option value="pre">before grazing (turn-in)</option><option value="post">after grazing (exit)</option><option value="mid">mid-period</option><option value="rest">rest paddock</option></select></label>
     <label>Frame area, m&#178;<input type="number" id="cArea" min="0.01" max="4" step="0.01" value="0.25"></label>
     <label class="wide">Dry weight per quadrat, g (spaces or commas)<input type="text" id="cVals" placeholder="e.g. 61.2 55.0 70.4 48.9 ..."></label>
     <button type="button" id="addClips">Add quadrats</button>
@@ -546,9 +541,9 @@ body:not([data-level="learn"]) .lv-learn, body:not([data-level="research"]) .lv-
   <div class="tw"><table>
     <thead><tr><th>Column</th><th>Meaning</th></tr></thead><tbody>
     <tr><td>date</td><td>YYYY-MM-DD, or a day number. Use one style for the whole file.</td></tr>
-    <tr><td>paddock</td><td>1, 2, 3 ... (P3 also works). Needed for biomass rows and move rows.</td></tr>
-    <tr><td>type</td><td>clip, uav, rover, map (either platform), plate, visual (biomass); camera, scale (weight); move (the herd enters this paddock that day); temp (daily mean air temperature, optional)</td></tr>
-    <tr><td>value</td><td>Biomass as paddock mean, or one clip quadrat per row. Weight per animal or herd mean. Empty for move rows.</td></tr>
+    <tr><td>paddock</td><td>1, 2, 3 ... (P3 also works). Needed for forage mass rows and move rows.</td></tr>
+    <tr><td>type</td><td>clip, uav, rover, map (either platform), plate, visual (forage mass); camera, scale (weight); move (the herd enters this paddock that day); temp (daily mean air temperature, optional)</td></tr>
+    <tr><td>value</td><td>Forage mass as paddock mean, or one clip quadrat per row. Weight per animal or herd mean. Empty for move rows.</td></tr>
     <tr><td>unit</td><td>kg/ha or lb/ac; kg or lb; C or F. Blank means kg/ha, kg, C.</td></tr>
     <tr><td>animal</td><td>Animal ID for camera and scale rows. Blank means the value is a herd mean.</td></tr>
     <tr><td>n, sd</td><td>Optional. For a clip row that is already a mean: number of quadrats and their SD.</td></tr>
@@ -577,18 +572,18 @@ body:not([data-level="learn"]) .lv-learn, body:not([data-level="research"]) .lv-
   <div class="tw" id="wxNormals"></div>
   <div class="tw" id="wxYears"></div>
   <h3>Run every year</h3>
-  <p class="small">Runs the dual trigger and a calendar with the same mean stay on every usable year, with the current settings. The spread across years is the range of outcomes this rule would have had.</p>
+  <p class="small">Runs the residual and ADG rule and a calendar with the same mean grazing period on every usable year, with the current settings. The spread across years is the range of outcomes this rule would have had.</p>
   <button type="button" id="wxRunAll" class="primary">Run all years</button>
   <div class="tw" id="wxAll" style="margin-top:12px"></div>
 </section>
 
 <section class="rule-top lv-hide-explore" data-only="sim">
-  <h2>Compare: calendar versus dual trigger</h2>
-  <p class="small">Runs the full season twice with the current settings and seed. The dual trigger runs first. The calendar then moves on a fixed schedule with the same mean stay, so the comparison is fair. Scores use the true state, which the controllers never see.</p>
+  <h2>Compare: calendar versus residual and ADG rule</h2>
+  <p class="small">Runs the full season twice with the current settings and seed. The residual and ADG rule runs first. The calendar then moves on a fixed schedule with the same mean grazing period, so the comparison is fair. Scores use the true state, which the move rules never see.</p>
   <button id="compareBtn" type="button" class="primary">Run the comparison</button>
   <div class="tw" id="compareOut" style="margin-top:12px"></div>
-  <h2 style="margin-top:22px">Compare biomass sensors</h2>
-  <p class="small">Runs the dual trigger three times on the same seed, once with each biomass sensor. Weights, weather, and settings are identical.</p>
+  <h2 style="margin-top:22px">Compare forage mass sensors</h2>
+  <p class="small">Runs the residual and ADG rule three times on the same seed, once with each forage mass sensor. Weights, weather, and settings are identical.</p>
   <button id="sensorBtn" type="button" class="primary">Compare the sensors</button>
   <div class="tw" id="sensorOut" style="margin-top:12px"></div>
   <h2 style="margin-top:22px">Export this season as field records</h2>
@@ -1416,59 +1411,56 @@ function isField() { return settings.source === "field"; }
 // ---------- guide text ----------
 var INFO = {
   about: ["How to read this page", [
-    "A home thermostat is a control loop. It measures the room, compares the reading with the set temperature, and switches the furnace on or off. Then it measures again.",
-    "This page treats rotational grazing the same way. Each morning the controller reads the estimates of grass and gain, compares them with the setpoints, and keeps or moves the herd.",
-    "A calendar rotation is an open loop: the decision ignores the measurements. The dual trigger is a closed loop.",
-    "Two data sources feed the same loop. Simulation makes a season with a known true state, so every decision can be scored. Field data replays your own records: clips, UAV or rover estimates, plate meter, visual estimates, camera and scale weights, and the days the herd moved."]],
-  "b-set": ["Setpoints: what we want", [
-    "The setpoints are fixed before grazing starts. The residual floor B* is the least grass we leave in a paddock so it regrows well. The gain-drop fraction \u03b4 says how much slower the cattle may gain before we call it a problem. The stay limits are the shortest and longest time the herd may stay in one paddock.",
-    "They can be changed during a run. The controller uses the new values from the next morning."]],
-  "b-ctrl": ["Controller: who decides", [
-    "The controller is the move rule. Each morning it asks two questions. Has the grass dropped to the floor? Has the herd's gain slowed too much? If either answer is yes, the herd moves. This is the dual trigger.",
-    "The controller only sees estimates, never the true values. When it fires, the block flashes and names the trigger: grass, gain, or the maximum stay.",
-    "On field data the controller does not move the herd. It gives its recommendation for that morning, and the log sets it next to what was done.",
-    "Rule: move if B\u0302(k) \u2264 B* or \u011d(k) \u2264 (1 - \u03b4) \u011d\u2098\u2090\u2093(k), subject to d\u2098\u1d62\u2099 \u2264 d \u2264 d\u2098\u2090\u2093. Here \u011d\u2098\u2090\u2093 is the best rolling gain since turn-in."]],
-  "b-act": ["Actuator: who acts", [
-    "The actuator carries out the decision. Someone opens a gate or moves a polywire, and the herd walks to the next paddock. The signal u(k) is the decision on day k: stay or move.",
-    "On field data the actuator shows what was actually done, from the move rows."]],
-  "b-plant": ["Plant: what is being controlled", [
-    "In control language the plant is the system being controlled. It does not mean a plant in the botanical sense. Here the plant is the paddock and the herd together.",
-    "The grass available, called allowance, sets how much the cattle can eat. What they eat, called removal, lowers the grass. Growth adds grass back. Trampling takes some away.",
-    "B(k+1) = B(k) + G(k) - I(k) - L(k) and W(k+1) = W(k) + f(I(k), q(k)) + w(k). In a simulation this block shows the truth. In the field nobody knows it; the clips are the closest reference."]],
-  "b-dist": ["Disturbances: what we cannot control", [
-    "Disturbances are outside influences: rain, heat, regrowth rate, and how full the animals are when weighed. A good control loop absorbs them without constant attention.",
-    "Heat above 28 \u00b0C cuts intake in every paddock. The gain trigger cannot tell a heat dip from a forage dip. On field data, temperature rows are optional; without them the estimator assumes no heat effect."]],
-  "b-sens": ["Sensors: how we see", [
-    "Biomass comes from one of several sensors: UAV or rover maps (Objective 1), a plate meter, or a visual estimate. Each has its own error. Maps and the plate meter are read at turn-in, on day 2, and at exit. A visual estimate can be made every morning.",
-    "Clipped quadrats are the reference. Twelve random quadrats at turn-in and exit give a paddock mean with a known standard error.",
-    "A camera at the water point estimates each animal's weight every day (Objective 2). The camera reading includes gut fill, b, which is larger than a day's gain. Ear tags are logged but not used in this version."]],
-  "b-est": ["Estimator: turning rough data into a best guess", [
-    "The estimator turns scattered readings into the best current guess and its uncertainty. Between readings it predicts the grass from the herd's expected intake and the regrowth rate. Each reading pulls the guess toward it, weighted by that sensor's error.",
-    "Several sensors can feed it at once. A precise reading moves the estimate more than a rough one.",
-    "Regrowth is learned from each paddock's exit reading and its next turn-in reading. Gain is the least-squares slope of the herd-mean camera weight over the last n days."]],
-  "b-outer": ["The slower loop: learning from each cycle", [
-    "This loop runs once per rotation cycle. References check the daily sensors. Clips check the biomass sensor. The scale checks the camera. The gap between reference and sensor is the error e(k).",
-    "When the outer loop is on, each 40-day cycle updates one factor per biomass sensor: its mean ratio to the clip means so far. Later readings are divided by that factor. This removes a steady bias, such as a plate meter's generic calibration. It cannot remove day-to-day scatter.",
-    "The full calibration of \u03b8 (utilization, regrowth, forage-to-gain constants) and the n-alkane reference belong to year 2 of the project and are not in this version."]],
+    "Rotational grazing repeats one cycle each day. Measure the forage and the cattle, decide to keep or move the herd, act, and measure again the next morning.",
+    "The move rule reads the best estimates of forage mass and average daily gain (ADG) and compares them with the management targets. A fixed rotation moves on set days and does not use the measurements. The residual and ADG rule is monitoring-based: it moves the herd when the measurements say so.",
+    "Two data sources use the same rule. A simulation makes a season with known true values, so each decision can be scored. Field data replays your own records: clips, UAV or rover estimates, plate meter, visual estimates, walk-over and scale weights, and the days the herd moved."]],
+  "b-set": ["Management targets: what we want", [
+    "The targets are set before grazing starts. The post-grazing residual target B* is the least forage mass to leave in a paddock so it regrows well. The ADG decline \u03b4 is how much slower the cattle may gain before the herd moves. The minimum and maximum grazing periods are the shortest and longest time in one paddock.",
+    "You can change them during a run. The move rule uses the new values from the next morning."]],
+  "b-ctrl": ["Move decision: who decides", [
+    "Each morning the move rule asks two questions. Has the forage mass fallen to the residual target? Has the herd ADG declined too much? If either answer is yes, the herd moves. This is the residual and ADG rule.",
+    "The rule sees only the estimates, never the true values. When it moves the herd, the block turns red and names the reason: residual target, ADG decline, or maximum grazing period.",
+    "On field data the rule does not move the herd. It gives its recommendation for that morning, and the move log puts it next to what was done.",
+    "Rule: move if B\u0302(k) \u2264 B* or \u011d(k) \u2264 (1 - \u03b4) \u011d\u2098\u2090\u2093(k), with d\u2098\u1d62\u2099 \u2264 d \u2264 d\u2098\u2090\u2093. B\u0302 is the estimated forage mass, \u011d is the ADG over the last n days, \u011d\u2098\u2090\u2093 is the best ADG in this paddock, and d is the grazing period so far."]],
+  "b-act": ["Gate: who acts", [
+    "Someone opens a gate or moves a polywire, and the herd walks to the next paddock.",
+    "On field data this block shows what was actually done, from the move rows."]],
+  "b-plant": ["Paddock and herd: what we manage", [
+    "Forage allowance sets how much the cattle can eat. Their intake lowers the forage mass. Regrowth adds forage back. Trampling and senescence take some away.",
+    "B(k+1) = B(k) + G(k) - I(k) - L(k) is the forage mass balance. W(k+1) = W(k) + f(I(k), q(k)) + w(k) is the body weight balance. In a simulation this block shows the true values. In the field nobody knows them; the clips are the closest reference."]],
+  "b-dist": ["Outside influences: what we cannot control", [
+    "Rain, heat, the regrowth rate, and gut fill at weighing all affect the result. A good rule works without constant attention to them.",
+    "Heat above 28 \u00b0C cuts intake in every paddock. The ADG check cannot tell a heat dip from a forage dip. On field data, temperature rows are optional; without them the estimate assumes no heat effect."]],
+  "b-sens": ["Measurements: how we see", [
+    "Forage mass comes from UAV or rover maps (Objective 1), a plate meter, or a visual estimate. Each has its own error. The team reads maps and the plate meter at turn-in, on day 2, and at exit. A visual estimate can be made every morning.",
+    "Clip quadrats are the reference. Twelve random quadrats at turn-in and exit give a paddock mean with a known standard error.",
+    "A walk-through station at the water point estimates each animal's weight every day (Objective 2). The walk-over weight includes gut fill, b, which is larger than one day's gain. Ear tags record location; this version does not use them."]],
+  "b-est": ["Best estimate: from rough data to a best guess", [
+    "This step turns scattered readings into the best current estimate and its uncertainty. Between readings it predicts the forage mass from the expected intake and the regrowth rate. Each reading moves the estimate toward it, more for a precise sensor than for a rough one.",
+    "Regrowth comes from each paddock's exit reading and its next turn-in reading. ADG is the least-squares slope of the herd walk-over weight over the last n days."]],
+  "b-outer": ["Check once per rotation", [
+    "Once per rotation, reference measurements check the daily measurements. Clips check the forage mass sensor. The scale checks the walk-over weights. The difference is the measurement error e(k).",
+    "When this check is on, every 40 days each forage mass sensor gets a correction factor: its mean ratio to the clip means. Later readings are divided by that factor. This removes a steady bias, such as a generic plate meter calibration. It cannot remove day-to-day scatter.",
+    "Calibration of \u03b8 (utilization, regrowth, gain per unit of forage) and the n-alkane reference are not in this version."]],
   normal: ["Scenario: normal season", [
-    "Average weather, medium sensor error, map sensor, floor 1500 kg/ha, \u03b4 30 percent, stays of 2 to 7 days, 5-day gain window.",
-    "Watch Plot 1 through the summer. Pre-graze biomass falls, so the grass trigger fires sooner and stays get shorter. Shorter stays also mean shorter rest. A pure floor rule speeds the rotation up exactly when regrowth slows.",
-    "Watch Plot 2b. The gain band is far wider than the change it is meant to detect. With ten head, many gain moves are fired by gut fill and camera error rather than by forage."]],
+    "Average weather, medium measurement error, map sensor, residual target 1500 kg DM/ha, ADG decline 30 percent, grazing periods of 2 to 7 days, 5-day ADG.",
+    "Watch Plot 1 through the summer. Pre-grazing forage mass falls, so the residual target is reached sooner and grazing periods get shorter. Shorter grazing periods also mean shorter rest periods. A residual-only rule speeds up the rotation exactly when regrowth slows.",
+    "Watch Plot 2b. The ADG band is much wider than the change it must detect. With ten head, gut fill and weighing error cause many ADG moves, not the forage."]],
   dry: ["Scenario: dry spell", [
-    "The grazing-sim dry season: 60 percent of normal rain and 1 \u00b0C warmer, with the same controller settings.",
-    "Regrowth falls, pre-graze biomass drops toward the floor, and the herd loses weight through midsummer. In this model the grass trigger does most of the work in a dry season.",
-    "Why the gain trigger does not fire first here: in grazing-sim, forage quality falls only as the sward matures, not with drought. A quality drop ahead of quantity is not in the model."]],
-  noisy: ["Scenario: high sensor noise", [
-    "All sensor errors and gut fill are doubled, and the minimum stay is 1 day.",
-    "Watch the move log. With d\u2098\u1d62\u2099 = 1, noisy readings move the herd after a single day, again and again. Engineers call this chattering.",
-    "Now raise d\u2098\u1d62\u2099 to 3. The minimum stay acts as a dwell time: one noisy reading can no longer move the herd, and false moves fall."]],
+    "The grazing-sim dry season: 60 percent of normal rain and 1 \u00b0C warmer, with the same rule settings.",
+    "Regrowth falls, pre-grazing forage mass drops toward the residual target, and the herd loses weight in midsummer. In this model the residual criterion makes most moves in a dry season.",
+    "Why the ADG check does not move the herd first: in grazing-sim, forage quality falls only as the sward matures, not with drought. A quality drop before a quantity drop is not in the model."]],
+  noisy: ["Scenario: large measurement error", [
+    "All measurement errors and gut fill are doubled, and the minimum grazing period is 1 day.",
+    "Watch the move log. With a 1-day minimum, inaccurate readings move the herd after one day, again and again.",
+    "Now raise the minimum grazing period to 3 days. One inaccurate reading can no longer move the herd, and early moves decrease."]],
   producer: ["Scenario: producer methods", [
-    "The same season, with a plate meter as the only biomass sensor. Switch the sensor to Visual estimate and press Reset to compare, or run Compare the sensors below.",
-    "Turn on the outer loop and reset. The plate meter's steady calibration bias shrinks after the first cycle. A visual estimate improves less, because most of its error is day-to-day scatter."]],
+    "The same season, with a plate meter as the only forage mass sensor. Switch the sensor to Visual estimate and press Reset to compare, or run Compare the sensors below.",
+    "Turn on the check once per rotation and reset. The steady plate meter bias decreases after the first rotation. A visual estimate improves less, because most of its error is day-to-day scatter."]],
   field: ["Field data", [
-    "Field mode replays your records through the same estimator and controller. Nothing is simulated. The plant block shows no true values, because nobody has them. Clips appear as reference points on Plot 1.",
-    "Each morning the controller states what the rule would do. The move log sets that next to what was done. Days the rule would have moved the herd but it stayed are listed as well.",
-    "Records can be typed, pasted, loaded from a file, or exported from a simulated season to see the format. The same format can be written by the lab's UAV, rover, and camera pipelines once they run."]]
+    "Field mode replays your records through the same estimate and move rule. Nothing is simulated. The paddock and herd block shows no true values, because nobody has them. Clips appear as reference points on Plot 1.",
+    "Each morning the rule states what it would do. The move log puts that next to what was done. It also lists the days when the rule would have moved the herd but the herd stayed.",
+    "You can type, paste, or load records from a file, or export a simulated season to see the format. The lab's UAV, rover, and weighing pipelines can write the same format."]]
 };
 function showInfo(key) {
   var it = INFO[key] || INFO.about;
@@ -1586,7 +1578,7 @@ Array.prototype.forEach.call(document.querySelectorAll(".blk"), function (b) {
   b.addEventListener("click", function () { showInfo(b.id); });
   b.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); showInfo(b.id); } });
 });
-function trigName(f) { return f === "grass" ? "grass trigger" : f === "gain" ? "gain trigger" : f === "grass and gain" ? "grass and gain" : f === "max stay" ? "maximum stay" : f === "calendar" ? "calendar" : f === "manual" ? "rule said stay" : "none"; }
+function trigName(f) { return f === "grass" ? "residual criterion" : f === "gain" ? "ADG check" : f === "grass and gain" ? "residual and ADG" : f === "max stay" ? "maximum grazing period" : f === "calendar" ? "fixed schedule" : f === "manual" ? "rule said stay" : "none"; }
 function flash(dec) {
   var name = dec.move ? trigName(dec.fired) : "herd moved; rule said stay";
   var hold = playing ? Math.min(700, 2500 / Number($("speed").value)) : 900;
@@ -1604,11 +1596,11 @@ function dateOf(d) {
 function renderDiagram() {
   var s = sim, S = s.settings, L = s.log, i = L.day.length - 1, dec = s.lastDecision, ob = s.obs, field = isField();
   setText("v-set1", "B* = " + S.floor + " kg/ha"); setText("v-set2", "(" + Math.round(S.floor * LB) + " lb/ac)");
-  setText("v-set3", "\u03b4 = " + S.delta + " %"); setText("v-set4", S.mode === "calendar" ? "calendar stay " + S.calendarDays + " d" : "d: " + S.dmin + " to " + S.dmax + " d, n = " + S.window);
+  setText("v-set3", "\u03b4 = " + S.delta + " %"); setText("v-set4", S.mode === "calendar" ? "fixed grazing period " + S.calendarDays + " d" : "period " + S.dmin + " to " + S.dmax + " d, ADG " + S.window + " d");
   var closed = S.mode !== "calendar";
-  setText("v-ctrl1", closed ? "Dual trigger" : "Calendar"); setText("v-ctrl2", (closed ? "closed loop" : "open loop") + (field ? ", advisory" : ""));
+  setText("v-ctrl1", closed ? (S.mode === "grass" ? "Residual rule" : "Residual and ADG rule") : "Fixed rotation"); setText("v-ctrl2", (closed ? "monitoring-based" : "fixed schedule") + (field ? ", advisory" : ""));
   $("a-fb").setAttribute("class", closed ? "sig fb live" : "sig off"); $("a-fb").setAttribute("marker-end", closed ? "url(#ahb)" : "");
-  $("a-fb-l").textContent = closed ? "x\u0302(k), P(k)" : "not used";
+  $("a-fb-l").textContent = closed ? "best estimate" : "not used";
   var firing = fireInfo && Date.now() < fireInfo.until;
   $("b-ctrl").classList.toggle("fire", !!(firing && fireInfo.rule));
   if (!dec) { setText("v-ctrl3", "Day 0: waiting"); setText("v-ctrl4", "press Play or Step"); }
@@ -1616,14 +1608,14 @@ function renderDiagram() {
   else {
     setText("v-ctrl3", "Day " + dec.day + ": " + (field ? "rule says " : "") + (dec.move ? "MOVE" : "STAY"));
     var held = closed && !dec.move && (dec.grassFire || dec.gainFire) && dec.stay < S.dmin;
-    setText("v-ctrl4", !closed ? ("day " + dec.stay + " of " + S.calendarDays) : held ? ((dec.grassFire ? "grass" : "gain") + " fired, held: day " + dec.stay + " < d\u2098\u1d62\u2099") : ("grass " + (dec.grassFire ? "yes" : "no") + ", gain " + (dec.gainFire ? "yes" : "no") + ", day " + dec.stay + " of stay"));
+    setText("v-ctrl4", !closed ? ("day " + dec.stay + " of " + S.calendarDays) : held ? ((dec.grassFire ? "residual" : "ADG") + " criterion met; minimum grazing period not reached") : ("residual " + (dec.grassFire ? "yes" : "no") + ", ADG " + (dec.gainFire ? "yes" : "no") + ", day " + dec.stay + " of grazing"));
   }
   var movedToday = s.moves.length && dec && s.moves[s.moves.length - 1].day === dec.day;
-  setText("v-act1", "u = " + (movedToday ? "move" : "stay") + (field ? " (done)" : ""));
-  setText("v-act2", movedToday ? "gate to paddock " + (s.cur + 1) : "gate closed");
+  setText("v-act1", (movedToday ? "gate opened" : "gate closed") + (field ? " (done)" : ""));
+  setText("v-act2", movedToday ? "herd to paddock " + (s.cur + 1) : "herd stays");
   if (field) {
     setText("v-dist", ob.tempToday !== null ? "air " + fmt(ob.tempToday, 1) + " \u00b0C (from records)" : "not recorded; no heat effect assumed");
-    setText("v-pl1", "Paddock " + (s.cur + 1) + ", day " + s.stay + " of stay");
+    setText("v-pl1", "Paddock " + (s.cur + 1) + ", day " + s.stay + " of grazing");
     setText("v-pl2", "True state not observed.");
     var lc = ob.clipLog.length ? ob.clipLog[ob.clipLog.length - 1] : null;
     setText("v-pl3", lc ? "Last clips: P" + (lc.p + 1) + ", " + fmt(lc.mean, 0) + " \u00b1 " + fmt(1.96 * lc.se, 0) + " kg/ha" : "No clips yet.");
@@ -1632,26 +1624,26 @@ function renderDiagram() {
     var wx = s.weather[Math.max(0, s.day - 1)] || s.weather[0];
     setText("v-dist", fmt(wx.temp, 1) + " \u00b0C, rain " + fmt(wx.rain, 0) + " mm, soil water " + fmt(wx.fW * 100, 0) + " %");
     var Wt = 0; s.herd.forEach(function (a) { Wt += a.BW; }); Wt /= s.herd.length;
-    setText("v-pl1", "Paddock " + (s.cur + 1) + ", day " + s.stay + " of stay");
+    setText("v-pl1", "Paddock " + (s.cur + 1) + ", day " + s.stay + " of grazing");
     setText("v-pl2", "B = " + fmt(s.trueB[s.cur], 0) + " kg/ha (true)");
     setText("v-pl3", "W = " + fmt(Wt, 1) + " kg (true, herd mean)");
     setText("v-pl4", s.lastDay ? "intake " + fmt(s.lastDay.intakePerHead, 1) + " kg DM/head/d, TDN " + fmt(s.lastDay.tdn, 0) + " %" : "intake not started");
   }
   var mo = ob.lastObs && ob.lastObs.map;
-  setText("v-s1", mo ? "y\u2081 " + mo.type + " (" + mo.role + ", P" + (mo.p + 1) + "): " + fmt(mo.raw, 0) + " kg/ha" : "y\u2081 biomass: no reading today");
-  setText("v-s2", i >= 0 && isFinite(L.camMean[i]) ? "y\u2082 camera: " + fmt(L.camMean[i], 1) + " kg herd mean" : "y\u2082 camera: no reading");
-  setText("v-s3", field ? "y\u2083 tags: not in records" : "y\u2083 tags: logged, not used in v1");
+  setText("v-s1", mo ? "y\u2081 " + mo.type + " (" + mo.role + ", P" + (mo.p + 1) + "): " + fmt(mo.raw, 0) + " kg/ha" : "y\u2081 forage mass: no reading today");
+  setText("v-s2", i >= 0 && isFinite(L.camMean[i]) ? "y\u2082 walk-over: " + fmt(L.camMean[i], 1) + " kg herd mean" : "y\u2082 walk-over: no reading");
+  setText("v-s3", field ? "y\u2083 tags: not in records" : "y\u2083 tags: logged, not used");
   var Bh = ob.Bhat[s.cur], band = 1.96 * Math.sqrt(ob.Pvar[s.cur]);
   setText("v-e1", "B\u0302 = " + fmt(Bh, 0) + " \u00b1 " + fmt(band, 0) + " kg/ha (" + fmt(Bh * LB, 0) + " lb/ac)");
   setText("v-e2", "\u011d = " + fmt(ob.gHat, 2) + " \u00b1 " + fmt(1.96 * ob.gSe, 2) + " kg/d over n = " + S.window + " d");
   var thr = (isFinite(ob.gMax) && ob.gMax > 0) ? (1 - S.delta / 100) * ob.gMax : NaN;
-  setText("v-e3", closed ? ("gain trigger if \u011d \u2264 " + fmt(thr, 2) + " kg/d (\u011d\u2098\u2090\u2093 = " + fmt(ob.gMax, 2) + ")") : "estimates computed, not used by the calendar");
+  setText("v-e3", closed ? ("ADG check if \u011d \u2264 " + fmt(thr, 2) + " kg/d (\u011d\u2098\u2090\u2093 = " + fmt(ob.gMax, 2) + ")") : "estimates computed, not used by the calendar");
   setText("v-e4", "regrowth r\u0302 = " + fmt(ob.rHat, 0) + " kg/ha/d (" + (ob.regrowthPairs.length ? "from " + ob.regrowthPairs.length + " reading pairs" : "prior") + ")");
   // outer loop
   var on = !!S.calibrate; $("b-outer").classList.toggle("on", on);
   ["a-o1", "a-o2"].forEach(function (id) { $(id).classList.toggle("on", on); });
   var nPairs = 0, facs = []; for (var t in ob.calPairs) { nPairs += ob.calPairs[t].length; if (ob.calFactor[t]) facs.push(t + " x" + fmt(ob.calFactor[t], 2)); }
-  $("b-outer").querySelector(".t").textContent = on ? "Outer loop, once per 40-day cycle: sensor calibration against clips (active)" : "Outer loop, once per rotation cycle: year 2 of project (inactive)";
+  $("b-outer").querySelector(".t").textContent = on ? "Check every 40 days: sensor calibration against clips (on)" : "Check once per rotation (off)";
   var sl = ob.scaleLog.length ? ob.scaleLog[ob.scaleLog.length - 1] : null;
   setText("v-o1", "Clip pairs: " + nPairs + (facs.length ? ". Factors (sensor / clip): " + facs.join(", ") : "") + (ob.lastCalDay ? ", updated day " + ob.lastCalDay : "") + ". Scale: " + (sl ? fmt(sl.value, 1) + " kg on day " + sl.day + " (camera " + fmt(sl.camera - sl.value, 1) + " kg off)" : "none yet") + ".");
 }
@@ -1681,13 +1673,13 @@ function renderRing() {
   out += "<circle class=\"ctr\" cx=\"160\" cy=\"160\" r=\"46\"/><text x=\"160\" y=\"156\" text-anchor=\"middle\" style=\"font-size:11.5px\">water and</text><text x=\"160\" y=\"171\" text-anchor=\"middle\" style=\"font-size:11.5px\">weigh station</text>";
   $("ring").innerHTML = out;
   var padTxt = s.trueB.length + " paddocks of " + (G.BASE.areaHa * 2.4711).toFixed(1) + " acre each";
-  $("ringCap").textContent = level === "explore" ? padTxt + " around the water trough. Darker green means more grass. Numbers are pounds of grass per acre. The outlined paddock has the cattle." : field ? "Paddocks around the water point. Shade is the estimated standing biomass, since the truth is not known. The outlined paddock holds the herd." :
-    padTxt + " around the water point, where the walk-through station sits. Shade is true standing biomass. The outlined paddock holds the herd.";
+  $("ringCap").textContent = level === "explore" ? padTxt + " around the water trough. Darker green means more grass. Numbers are pounds of grass per acre. The outlined paddock has the cattle." : field ? "Paddocks around the water point. Shade is the estimated standing forage mass, since the truth is not known. The outlined paddock holds the herd." :
+    padTxt + " around the water point, where the walk-through station sits. Shade is true standing forage mass. The outlined paddock holds the herd.";
   var ev = s.events, last = ev.length ? ev[ev.length - 1] : null;
   $("ringRead").innerHTML =
     "<div><span>Herd in</span><span>paddock " + (s.cur + 1) + ", day " + s.stay + "</span></div>" +
     "<div><span>Moves so far</span><span>" + s.moves.length + "</span></div>" +
-    "<div><span>Mean stay so far</span><span>" + (ev.length ? fmt(ev.reduce(function (a, e) { return a + e.days; }, 0) / ev.length, 1) + " d" : "n/a") + "</span></div>" +
+    "<div><span>Mean grazing period so far</span><span>" + (ev.length ? fmt(ev.reduce(function (a, e) { return a + e.days; }, 0) / ev.length, 1) + " d" : "n/a") + "</span></div>" +
     "<div><span>" + (field ? "Paddock just left, estimate now" : "Last exit residual (true)") + "</span><span>" + (last ? fmt(field ? s.obs.Bhat[last.paddock] : last.postTrue, 0) + " kg/ha" : "n/a") + "</span></div>" +
     "<div><span>Date</span><span>" + dateOf(Math.min(s.day, totalDays() - 1)) + "</span></div>";
 }
@@ -1738,7 +1730,7 @@ function drawPlots() {
   var o = f.g + moveLines(f, x0, x1), bh = pick(L.Bhat), bb = pick(L.Bband);
   o += bandPath(xs, bh.map(function (v, k) { return v - bb[k]; }), bh.map(function (v, k) { return v + bb[k]; }), f.X, f.Y, "var(--band)");
   o += "<line x1=\"" + f.ml + "\" x2=\"" + (f.W - f.mr) + "\" y1=\"" + f.Y(S.floor) + "\" y2=\"" + f.Y(S.floor) + "\" stroke=\"var(--forest)\" stroke-width=\"1.6\" stroke-dasharray=\"7 4\"/>";
-  o += "<text class=\"ax\" x=\"" + (f.W - f.mr - 4) + "\" y=\"" + (f.Y(S.floor) - 5) + "\" text-anchor=\"end\" style=\"fill:var(--forest)\">floor " + S.floor + " kg/ha</text>";
+  o += "<text class=\"ax\" x=\"" + (f.W - f.mr - 4) + "\" y=\"" + (f.Y(S.floor) - 5) + "\" text-anchor=\"end\" style=\"fill:var(--forest)\">residual target " + S.floor + " kg/ha</text>";
   o += line(xs, pick(L.Btrue), f.X, f.Y, "stroke=\"var(--navy)\" stroke-width=\"1.8\"");
   o += line(xs, bh, f.X, f.Y, "stroke=\"var(--burg)\" stroke-width=\"1.5\" stroke-dasharray=\"5 3\"");
   var cl = function (v) { return Math.max(600, Math.min(3400, v)); };
@@ -1781,15 +1773,15 @@ function renderLog() {
     var items = m.map(function (x) { return { day: x.day, t: "m", x: x }; }).concat(s.recs.map(function (x) { return { day: x.day, t: "r", x: x }; })).sort(function (a, b) { return b.day - a.day; }).slice(0, 60);
     items.forEach(function (it) {
       var x = it.x;
-      if (it.t === "m") html += "<div>" + dateOf(x.day) + ": moved P" + (x.from + 1) + " to P" + (x.to + 1) + " after " + x.stay + " d" + (x.agreed ? "<span class=\"tag " + tagCls(x.fired) + "\">rule agreed: " + x.fired + "</span>" : "<span class=\"tag bad\">rule said stay</span>") + "</div>";
-      else html += "<div>" + dateOf(x.day) + ": herd stayed in P" + (x.paddock + 1) + " (day " + x.stay + ")<span class=\"tag " + tagCls(x.fired) + "\">rule said move: " + x.fired + "</span></div>";
+      if (it.t === "m") html += "<div>" + dateOf(x.day) + ": moved P" + (x.from + 1) + " to P" + (x.to + 1) + " after " + x.stay + " d" + (x.agreed ? "<span class=\"tag " + tagCls(x.fired) + "\">rule agreed: " + trigName(x.fired) + "</span>" : "<span class=\"tag bad\">rule said stay</span>") + "</div>";
+      else html += "<div>" + dateOf(x.day) + ": herd stayed in P" + (x.paddock + 1) + " (day " + x.stay + ")<span class=\"tag " + tagCls(x.fired) + "\">rule said move: " + trigName(x.fired) + "</span></div>";
     });
   } else {
     var f = m.filter(function (x) { return x.wrong === "false"; }).length, miss = s.events.filter(function (e) { return e.missed; }).length + (s.eventOpen && s.eventOpen.missed ? 1 : 0);
-    setText("logSum", m.length + " moves. False moves so far: " + f + ". Stays with a missed move: " + miss + ". A false move fired on the estimate when neither true condition held; a missed move is a day the true state called for a move and the herd stayed.");
+    setText("logSum", m.length + " moves. Early moves so far: " + f + ". Grazing periods with a late move: " + miss + ". A early move fired on the estimate when neither true condition held; a late move is a day the true state called for a move and the herd stayed.");
     for (var i = m.length - 1; i >= Math.max(0, m.length - 40); i--) {
       var x = m[i];
-      html += "<div>Day " + x.day + ": left paddock " + (x.from + 1) + " after " + x.stay + " d<span class=\"tag " + tagCls(x.fired) + "\">" + x.fired + "</span>" + (x.wrong === "false" ? "<span class=\"tag bad\">false move</span>" : "") + "</div>";
+      html += "<div>Day " + x.day + ": left paddock " + (x.from + 1) + " after " + x.stay + " d<span class=\"tag " + tagCls(x.fired) + "\">" + trigName(x.fired) + "</span>" + (x.wrong === "false" ? "<span class=\"tag bad\">early move</span>" : "") + "</div>";
     }
   }
   $("log").innerHTML = html;
@@ -1800,9 +1792,9 @@ function renderFieldSum() {
   var s = sim, ob = s.obs, clipsPost = ob.clipLog.filter(function (c) { return c.role === "post"; }), clipsPre = ob.clipLog.filter(function (c) { return c.role === "pre"; });
   var rows = [["Days replayed", s.log.day.length + " of " + s.days], ["Moves recorded", s.moves.length], ["Rule agreed on the move day", s.moves.filter(function (x) { return x.agreed; }).length],
     ["Mornings the rule said move but the herd stayed", s.recs.length],
-    ["Mean clip biomass at turn-in, kg DM/ha", clipsPre.length ? fmt(clipsPre.reduce(function (a, c) { return a + c.mean; }, 0) / clipsPre.length, 0) + " (n = " + clipsPre.length + ")" : "no clips"],
-    ["Mean clip biomass at exit, kg DM/ha", clipsPost.length ? fmt(clipsPost.reduce(function (a, c) { return a + c.mean; }, 0) / clipsPost.length, 0) + " (n = " + clipsPost.length + ")" : "no clips"],
-    ["Exits below the floor by clips", clipsPost.length ? clipsPost.filter(function (c) { return c.mean < s.settings.floor; }).length + " of " + clipsPost.length : "no clips"]];
+    ["Mean clip forage mass at turn-in, kg DM/ha", clipsPre.length ? fmt(clipsPre.reduce(function (a, c) { return a + c.mean; }, 0) / clipsPre.length, 0) + " (n = " + clipsPre.length + ")" : "no clips"],
+    ["Mean clip forage mass at exit, kg DM/ha", clipsPost.length ? fmt(clipsPost.reduce(function (a, c) { return a + c.mean; }, 0) / clipsPost.length, 0) + " (n = " + clipsPost.length + ")" : "no clips"],
+    ["Exits below the residual target by clips", clipsPost.length ? clipsPost.filter(function (c) { return c.mean < s.settings.floor; }).length + " of " + clipsPost.length : "no clips"]];
   for (var t in ob.calPairs) rows.push(["Mean ratio " + t + " / clip (" + ob.calPairs[t].length + " pairs)", fmt(ob.calPairs[t].reduce(function (a, b) { return a + b; }, 0) / ob.calPairs[t].length, 3)]);
   $("fieldSum").innerHTML = "<table><tbody>" + rows.map(function (r) { return "<tr><td>" + r[0] + "</td><td class=\"n\">" + r[1] + "</td></tr>"; }).join("") + "</tbody></table>";
 }
@@ -1857,20 +1849,20 @@ function renderAll() {
 
 // ---------- comparisons (simulation) ----------
 function scoreTable(cols, heads) {
-  var rows = [["Mean stay, days", "meanStay", 2, ""], ["Mean post-graze residual, kg DM/ha", "residual", 0, "lb"], ["Lowest post-graze residual, kg DM/ha", "minResidual", 0, "lb"],
+  var rows = [["Mean grazing period, days", "meanStay", 2, ""], ["Mean post-graze residual, kg DM/ha", "residual", 0, "lb"], ["Lowest post-graze residual, kg DM/ha", "minResidual", 0, "lb"],
     ["Mean utilization, percent", "util", 0, "pct"], ["Gain per hectare, kg", "gainPerHa", 0, ""], ["Mean daily gain, kg/head/d", "adg", 2, ""],
-    ["False moves", "falseMoves", 0, ""], ["Stays with a missed move", "missedEvents", 0, ""], ["Wrong moves, total", "wrongMoves", 0, ""]];
+    ["Early moves", "falseMoves", 0, ""], ["Grazing periods with a late move", "missedEvents", 0, ""], ["Wrong moves, total", "wrongMoves", 0, ""]];
   var h = "<table><thead><tr><th>Score (true state)</th>" + heads.map(function (x) { return "<th>" + x + "</th>"; }).join("") + "</tr></thead><tbody>";
   rows.forEach(function (r) { h += "<tr><td>" + r[0] + "</td>" + cols.map(function (c) { var v = c[r[1]] * (r[3] === "pct" ? 100 : 1); return "<td class=\"n\">" + fmt(v, r[2]) + (r[3] === "lb" ? " <span class=\"muted\">(" + fmt(v * LB, 0) + " lb/ac)</span>" : "") + "</td>"; }).join("") + "</tr>"; });
-  h += "<tr><td>Triggers that fired</td>" + cols.map(function (c) { return "<td>" + Object.keys(c.triggers).map(function (k) { return k + " " + c.triggers[k]; }).join(", ") + "</td>"; }).join("") + "</tr>";
+  h += "<tr><td>Reasons for moves</td>" + cols.map(function (c) { return "<td>" + Object.keys(c.triggers).map(function (k) { return trigName(k) + " " + c.triggers[k]; }).join(", ") + "</td>"; }).join("") + "</tr>";
   return h + "</tbody></table>";
 }
 $("compareBtn").addEventListener("click", function () {
   var b = this; b.disabled = true; b.textContent = "Running...";
   setTimeout(function () {
     var r = G.compare(settings);
-    $("compareOut").innerHTML = scoreTable([r.dual, r.calendar], ["Dual trigger (closed loop)", "Calendar, same mean stay (open loop)"]) +
-      "<p class=\"small muted\" style=\"margin-top:8px\">Seed " + settings.seed + ", " + settings.weather + " weather, " + G.BIO_SENSORS[settings.bioSensor].toLowerCase() + ". The calendar averages " + fmt(r.meanStay, 2) + " d per stay. One simulated season with placeholder parameters.</p>";
+    $("compareOut").innerHTML = scoreTable([r.dual, r.calendar], ["Residual and ADG rule (monitoring)", "Fixed rotation, same mean grazing period"]) +
+      "<p class=\"small muted\" style=\"margin-top:8px\">Seed " + settings.seed + ", " + settings.weather + " weather, " + G.BIO_SENSORS[settings.bioSensor].toLowerCase() + ". The calendar averages " + fmt(r.meanStay, 2) + " d per grazing period. One simulated season with placeholder parameters.</p>";
     b.disabled = false; b.textContent = "Run the comparison";
   }, 30);
 });
@@ -1879,7 +1871,7 @@ $("sensorBtn").addEventListener("click", function () {
   setTimeout(function () {
     var r = G.compareSensors(settings), keys = Object.keys(G.BIO_SENSORS);
     $("sensorOut").innerHTML = scoreTable(keys.map(function (k) { return r[k]; }), keys.map(function (k) { return G.BIO_SENSORS[k]; })) +
-      "<p class=\"small muted\" style=\"margin-top:8px\">Seed " + settings.seed + ", dual trigger, outer loop " + (settings.calibrate ? "on" : "off") + ". Sensor errors are placeholders. Most false moves come from the gain trigger, which is the same in all three columns; the difference between columns is the biomass sensor.</p>";
+      "<p class=\"small muted\" style=\"margin-top:8px\">Seed " + settings.seed + ", residual and ADG rule, check once per rotation " + (settings.calibrate ? "on" : "off") + ". Sensor errors are placeholders. Most early moves come from the ADG check, which is the same in all three columns; the difference between columns is the forage mass sensor.</p>";
     b.disabled = false; b.textContent = "Compare the sensors";
   }, 30);
 });
@@ -1935,14 +1927,14 @@ $("wxRunAll").addEventListener("click", function () {
   var b = this; b.disabled = true; b.textContent = "Running...";
   setTimeout(function () {
     var R = G.runYears(settings);
-    var h = "<table><thead><tr><th>Season</th><th>Rain, mm</th><th>Gain per ha, dual</th><th>Gain per ha, calendar</th><th>Lowest residual, dual</th><th>Lowest residual, calendar</th><th>Wrong moves, dual</th><th>Wrong moves, calendar</th><th>Mean stay, d</th></tr></thead><tbody>";
+    var h = "<table><thead><tr><th>Season</th><th>Rain, mm</th><th>Gain per ha, residual and ADG</th><th>Gain per ha, fixed rotation</th><th>Lowest residual, residual and ADG</th><th>Lowest residual, fixed rotation</th><th>Wrong moves, residual and ADG</th><th>Wrong moves, fixed rotation</th><th>Mean grazing period, d</th></tr></thead><tbody>";
     R.forEach(function (r) { h += "<tr><td>" + r.year + "</td><td class=\"n\">" + fmt(r.wx.rainMm, 0) + "</td><td class=\"n\">" + fmt(r.dual.gainPerHa, 0) + "</td><td class=\"n\">" + fmt(r.calendar.gainPerHa, 0) + "</td><td class=\"n\">" + fmt(r.dual.minResidual, 0) + "</td><td class=\"n\">" + fmt(r.calendar.minResidual, 0) + "</td><td class=\"n\">" + r.dual.wrongMoves + "</td><td class=\"n\">" + r.calendar.wrongMoves + "</td><td class=\"n\">" + fmt(r.meanStay, 1) + "</td></tr>"; });
     h += "</tbody></table>";
     var col = function (f) { return R.map(f); }, row = function (lab, a, dcm) { return "<tr><td>" + lab + "</td><td class=\"n\">" + fmt(pctl(a, 0.1), dcm) + "</td><td class=\"n\">" + fmt(pctl(a, 0.5), dcm) + "</td><td class=\"n\">" + fmt(pctl(a, 0.9), dcm) + "</td></tr>"; };
     var sum = "<table><thead><tr><th>Across " + R.length + " seasons</th><th>10th percentile</th><th>Median</th><th>90th percentile</th></tr></thead><tbody>" +
-      row("Gain per ha, dual trigger, kg", col(function (r) { return r.dual.gainPerHa; }), 0) + row("Gain per ha, calendar, kg", col(function (r) { return r.calendar.gainPerHa; }), 0) +
-      row("Lowest residual, dual trigger, kg DM/ha", col(function (r) { return r.dual.minResidual; }), 0) + row("Lowest residual, calendar, kg DM/ha", col(function (r) { return r.calendar.minResidual; }), 0) +
-      row("Wrong moves, dual trigger", col(function (r) { return r.dual.wrongMoves; }), 0) + row("Wrong moves, calendar", col(function (r) { return r.calendar.wrongMoves; }), 0) + "</tbody></table>";
+      row("Gain per ha, residual and ADG rule, kg", col(function (r) { return r.dual.gainPerHa; }), 0) + row("Gain per ha, fixed rotation, kg", col(function (r) { return r.calendar.gainPerHa; }), 0) +
+      row("Lowest residual, residual and ADG rule, kg DM/ha", col(function (r) { return r.dual.minResidual; }), 0) + row("Lowest residual, fixed rotation, kg DM/ha", col(function (r) { return r.calendar.minResidual; }), 0) +
+      row("Wrong moves, residual and ADG rule", col(function (r) { return r.dual.wrongMoves; }), 0) + row("Wrong moves, fixed rotation", col(function (r) { return r.calendar.wrongMoves; }), 0) + "</tbody></table>";
     $("wxAll").innerHTML = sum + "<p class=\"small muted\" style=\"margin-top:6px\">Seed " + settings.seed + " for animals and sensors in every season, so the differences between rows come from the weather. Pasture and animal parameters are still placeholders.</p>" + h;
     b.disabled = false; b.textContent = "Run all years";
   }, 30);
@@ -2035,11 +2027,11 @@ var PT = [
   ["Senescence", "0.006 per day, +0.005 above 29 \u00b0C, +0.005 x (1 - soil water); acts above the ungrazeable residual", "grazing-sim", "Placeholder"],
   ["Forage quality", "TDN = 66 - 12 B/5000 percent (maturity proxy)", "grazing-sim", "Placeholder"],
   ["Ungrazeable residual", "800 kg/ha", "grazing-sim", "Placeholder"],
-  ["Initial biomass", "2600 kg/ha, CV 0.15 between paddocks", "grazing-sim", "Placeholder"],
+  ["Initial forage mass", "2600 kg/ha, CV 0.15 between paddocks", "grazing-sim", "Placeholder"],
   ["Paddocks", "10 x 1 acre (0.405 ha); lumped to the paddock mean", "Handover scenario", "Design"],
   ["Herd", "10 growing animals, 300 kg, SD 25 kg", "grazing-sim herd values, handover head count", "Design"],
   ["Intake capacity", "2.6 percent of body weight per day", "NASEM 2016 via grazing-sim", "Literature"],
-  ["Heat effect on intake", "-3 percent per \u00b0C above 28 \u00b0C, floor 0.75", "grazing-sim", "Placeholder"],
+  ["Heat effect on intake", "-3 percent per \u00b0C above 28 \u00b0C, lower limit 0.75", "grazing-sim", "Placeholder"],
   ["Allowance limit on intake", "capacity x clamp((B - 800)/1200, 0, 1); intake plus trampling cannot take B below 800", "grazing-sim bite-size constraint at paddock scale", "Placeholder"],
   ["Trampling", "15 percent of intake", "grazing-sim", "Placeholder"],
   ["Energy partition and gain", "DE = 0.04409 TDN; ME = 0.82 DE; NEm and NEg cubic in ME; NEm requirement = 0.077 SBW^0.75 x 1.15; RE = 0.0635 EBW^0.75 EBG^1.097", "NRC 1996, NASEM 2016 via grazing-sim; verify coefficients", "Literature"],
@@ -2056,15 +2048,15 @@ var PT = [
   ["Noise settings", "low 0.25 x, medium 1 x, high 2 x the placeholder errors", "Set here", "Design"],
   ["Historical weather", "optional; daily record (NOAA GHCN-Daily or plain CSV) replaces the placeholder temperature and rain for a chosen season; soil bucket unchanged", "User file; Clemson University USC00381770 or Anderson USW00093846 suggested", "Design"],
   ["Measured sensor errors", "optional; bias and scatter measured against clips in field records replace a sensor's placeholder model: y = B (1 + bias + e), e ~ N(0, scatter)", "Field records, via Sensor error against clips", "Design"],
-  ["Outer loop", "off by default; when on, every 40 days each biomass sensor gets a factor equal to its mean ratio to clip means so far; later readings are divided by it", "Set here", "Design"],
-  ["Residual floor B*", "default 1500 kg/ha (1338 lb/ac); allowed 1000 to 2000", "grazing-sim exit floor; calculators give 1200 to 1500 lb/ac for fescue", "Design"],
-  ["Gain drop \u03b4", "default 30 percent; allowed 10 to 40", "Calculators (25 to 40 percent); grazing-sim used 25", "Design"],
-  ["Stay limits", "d\u2098\u1d62\u2099 2 d (1 to 3), d\u2098\u2090\u2093 7 d (3 to 10)", "Handover ranges; calculator maximum 7 to 10 d; grazing-sim used 3 and 14", "Design"],
-  ["Gain window n", "default 5 d; allowed 3 to 5", "Handover; grazing-sim used 7", "Design"],
-  ["Calendar stay", "4 d", "Handover scenario", "Design"],
-  ["Control law", "move if B\u0302 \u2264 B* or \u011d \u2264 (1 - \u03b4) \u011d\u2098\u2090\u2093, with the stay limits; \u011d\u2098\u2090\u2093 is the best rolling gain since turn-in, used only when positive", "Control-loop notation (OR); grazing-sim Rule 4 used AND", "Design"],
+  ["Check once per rotation", "off by default; when on, every 40 days each forage mass sensor gets a factor equal to its mean ratio to clip means so far; later readings are divided by it", "Set here", "Design"],
+  ["Post-grazing residual target B*", "default 1500 kg/ha (1338 lb/ac); allowed 1000 to 2000", "grazing-sim exit target; calculators give 1200 to 1500 lb/ac for fescue", "Design"],
+  ["ADG decline \u03b4", "default 30 percent; allowed 10 to 40", "Calculators (25 to 40 percent); grazing-sim used 25", "Design"],
+  ["Grazing period limits", "d\u2098\u1d62\u2099 2 d (1 to 3), d\u2098\u2090\u2093 7 d (3 to 10)", "Handover ranges; calculator maximum 7 to 10 d; grazing-sim used 3 and 14", "Design"],
+  ["ADG window n", "default 5 d; allowed 3 to 5", "Handover; grazing-sim used 7", "Design"],
+  ["Fixed grazing period", "4 d", "Handover scenario", "Design"],
+  ["Control law", "move if B\u0302 \u2264 B* or \u011d \u2264 (1 - \u03b4) \u011d\u2098\u2090\u2093, with the grazing-period limits; \u011d\u2098\u2090\u2093 is the best ADG since turn-in, used only when positive", "Residual or ADG criterion (OR); grazing-sim Rule 4 used AND", "Design"],
   ["Regrowth estimate", "prior 45 kg/ha/d (40 lb/ac/d) until the first exit-to-turn-in reading pairs, then the mean of the last 3 pairs", "Practice calculator spring value; method set here", "Design"],
-  ["Estimator", "one filter per paddock; each reading weighted by its sensor's relative SE; process noise: regrowth SD 15 kg/ha/d plus 10 percent of predicted removal", "Set here", "Design"],
+  ["Best estimate", "one filter per paddock; each reading weighted by its sensor's relative SE; process noise: regrowth SD 15 kg/ha/d plus 10 percent of predicted removal", "Set here", "Design"],
   ["Missing camera days", "an animal not seen keeps its last daily median", "Set here; grazing-sim averaged the animals seen", "Design"],
   ["Field data defaults", "head, paddock count, area, start weight, regrowth prior, and sensor SEs are inputs; defaults match the simulation", "Set here", "Design"]
 ];
@@ -2075,7 +2067,7 @@ var PT = [
 var LVKEY = "grazing-control-sim-level", ADVKEY = "grazing-control-sim-adv", EXKEY = "grazing-control-sim-explore";
 var level = "learn", ex = { rule: "grass", floorLb: 1350, quality: "good", challenge: null };
 try { var exs = JSON.parse(localStorage.getItem(EXKEY) || "null"); if (exs) { for (var kx in ex) if (exs[kx] !== undefined) ex[kx] = exs[kx]; } } catch (e) {}
-var LVNOTE = { explore: "For anyone: the idea in plain words.", learn: "For students: the full loop, with explanations.", research: "For researchers: everything, including field data and parameters." };
+var LVNOTE = { explore: "For anyone: the idea in plain words.", learn: "For students: the full grazing loop, with explanations.", research: "For researchers: everything, including field data and parameters." };
 var EXQ = { good: "low", fair: "medium", poor: "high" };
 function lb(kgHa) { return Math.round(kgHa * LB); }
 function n0(v) { return isFinite(v) ? Math.round(v).toLocaleString("en-US") : "n/a"; }
@@ -2136,7 +2128,7 @@ function renderExplore() {
   setText("exC1", S.mode === "calendar" ? "Rule: move every 4 days" : "Rule: move below " + n0(lb(tgt)) + " lb/acre");
   setText("exC2", !dec ? "Waiting for the first morning" : movedToday ? "Decision: MOVE" : "Decision: stay");
   var lastMove = movedToday ? s.moves[s.moves.length - 1] : null;
-  setText("exC3", movedToday ? (lastMove.fired === "calendar" ? "Day 4 reached in paddock " + (lastMove.from + 1) : lastMove.fired === "max stay" ? "7 days is the longest stay" : "Paddock " + (lastMove.from + 1) + " looked short: " + n0(lb(dec.Bhat))) :
+  setText("exC3", movedToday ? (lastMove.fired === "calendar" ? "Day 4 reached in paddock " + (lastMove.from + 1) : lastMove.fired === "max stay" ? "7 days is the longest grazing period" : "Paddock " + (lastMove.from + 1) + " looked short: " + n0(lb(dec.Bhat))) :
     S.mode === "calendar" ? "Day " + s.stay + " of 4" : (dec && dec.grassFire ? "Short, but stay at least 2 days" : "Best guess " + n0(lb(Bh)) + " lb/acre"));
   $("exC").classList.toggle("fire", !!movedToday);
   setText("exD1", movedToday ? "Gate opened." : "Gate stays closed.");
@@ -2154,7 +2146,7 @@ function renderExplore() {
     if (e.postTrue < 0.8 * tgt) { cls = "bad"; verdict = "Too short. It will regrow slowly."; }
     else if (e.postTrue < 0.9 * tgt) { cls = "warn"; verdict = "A bit too short."; }
     else { cls = "good"; verdict = "Good, close to or above your target."; }
-    var early = m && m.wrong === "false" ? " The sensor said the grass was short, but it was not: moved too early." : m && m.fired === "max stay" ? " (Moved because 7 days is the longest stay.)" : "";
+    var early = m && m.wrong === "false" ? " The sensor said the grass was short, but it was not: moved too early." : m && m.fired === "max stay" ? " (Moved because 7 days is the longest grazing period.)" : "";
     exLines.unshift("<div class=\"" + cls + "\">Day " + e.dayEnd + ": left paddock " + (e.paddock + 1) + " after " + e.days + " days with " + n0(left) + " lb/acre. " + verdict + early + "</div>");
   }
   if (exLines.length > 60) exLines.length = 60;
@@ -2203,7 +2195,7 @@ $("cfgDl").addEventListener("click", function () {
 // ---------- help panel ----------
 var HELP = [
   ['.levels [data-level="explore"]', 'Explore level', 'The simple view: the idea in plain words, for anyone.'],
-  ['.levels [data-level="learn"]', 'Learn level', 'For students: the full control loop, plots, scenarios, and exercises.'],
+  ['.levels [data-level="learn"]', 'Learn level', 'For students: the full grazing loop, plots, scenarios, and exercises.'],
   ['.levels [data-level="research"]', 'Research level', 'Everything: field data, weather records, calibration, parameter files, and the parameter table.'],
   ['#helpToggle', 'Help panel', 'Turns this help panel on or off.'],
   ['#playBtn', 'Play or Pause', 'Runs the season one day at a time. Press again to pause. The space bar does the same.'],
@@ -2224,42 +2216,42 @@ var HELP = [
   ['#exReport', 'Season report', 'A running score: moves, grass left, paddocks grazed too short, and weight gained.'],
   ['#exMsg', 'What happened', 'A diary of each move: how much grass was left and whether it was too short.'],
   ['#ring', 'Paddock ring', 'The paddocks around the water point. Darker green means more grass. The outlined paddock has the herd.'],
-  ['#b-set', 'Setpoints', 'Your targets: the grass floor, the gain-drop limit, and the shortest and longest stay. Click a block for more.'],
-  ['#b-ctrl', 'Controller', 'The move rule. Each morning it decides stay or move from estimates only. It flashes when it fires.'],
-  ['#b-act', 'Actuator', 'Carries out the decision: open the gate and move the herd.'],
-  ['#b-plant', 'Plant', 'The real paddock and herd. The controller never sees these true values.'],
-  ['#b-dist', 'Disturbances', 'Things nobody controls: temperature, rain, and soil water.'],
-  ['#b-sens', 'Sensors', 'Biomass readings, the camera at the water point, and the ear tags. Each has error.'],
-  ['#b-est', 'Estimator', 'Turns noisy, scattered readings into a best guess with an uncertainty band.'],
-  ['#b-outer', 'Outer loop', 'A slower loop that recalibrates the sensors against clips. Off unless turned on.'],
+  ['#b-set', 'Management targets', 'Your targets: the post-grazing residual target, the ADG decline limit, and the shortest and longest grazing period. Click a block for more.'],
+  ['#b-ctrl', 'Move decision', 'The move rule. Each morning it decides to keep or move the herd, from estimates only. It turns red on a day the herd moves.'],
+  ['#b-act', 'Gate', 'Carries out the decision: open the gate or move the polywire.'],
+  ['#b-plant', 'Paddock and herd', 'The real paddock and herd. The move rule never sees these true values.'],
+  ['#b-dist', 'Outside influences', 'Things nobody controls: temperature, rain, and soil water.'],
+  ['#b-sens', 'Measurements', 'Forage mass readings, walk-over weights at the water point, and the ear tags. Each has error.'],
+  ['#b-est', 'Best estimate', 'Turns scattered readings into a best estimate of forage mass and ADG, with a confidence band.'],
+  ['#b-outer', 'Check once per rotation', 'Compares the daily measurements with reference measurements (clips, scale). Off unless turned on.'],
   ['[data-scn]', 'Scenario', 'Loads ready-made settings. Then press Play.'],
-  ['input[name=mode]', 'Controller mode', 'Calendar moves on fixed days and ignores the sensors (open loop). The dual trigger moves when grass or gain says so (closed loop).'],
-  ['#calendarDays', 'Calendar stay', 'Days in each paddock when the herd moves by calendar.'],
-  ['#floor', 'Residual floor B*', 'The herd moves when the estimated grass falls to this level.'],
-  ['#delta', 'Gain drop', 'The herd moves when the rolling gain falls this far below its best value in the paddock.'],
-  ['#dmin', 'Minimum stay', 'The herd cannot move sooner, even if one noisy reading says so.'],
-  ['#dmax', 'Maximum stay', 'The herd always moves after this many days.'],
-  ['#window', 'Gain window', 'Days of camera weights used for the rolling gain. Longer is steadier but slower.'],
-  ['#bioSensor', 'Biomass sensor', 'The sensor the controller uses: a map, a plate meter, or a visual estimate.'],
+  ['input[name=mode]', 'Move rule', 'A fixed rotation moves on set days and ignores the measurements. The residual and ADG rule moves when the forage mass or the ADG says so.'],
+  ['#calendarDays', 'Fixed grazing period', 'Days in each paddock in a fixed rotation.'],
+  ['#floor', 'Post-grazing residual target B*', 'The herd moves when the estimated forage mass falls to this level.'],
+  ['#delta', 'ADG decline', 'The herd moves when the ADG falls this far below its best value in the paddock.'],
+  ['#dmin', 'Minimum grazing period', 'The herd cannot move sooner, even if one noisy reading says so.'],
+  ['#dmax', 'Maximum grazing period', 'The herd always moves after this many days.'],
+  ['#window', 'ADG window', 'Days of walk-over weights used for the ADG. Longer is steadier but slower.'],
+  ['#bioSensor', 'Forage mass sensor', 'The sensor the move rule uses: a map, a plate meter, or a visual estimate.'],
   ['#weather', 'Weather', 'The season weather: average, dry, wet, or one year of a loaded weather record.'],
   ['#recordYear', 'Record year', 'Which year of the loaded weather record to replay.'],
-  ['#noiseMap', 'Biomass sensor error', 'How much error the biomass sensor has: low, medium, or high.'],
-  ['#noiseCamera', 'Camera error', 'How much error the weight camera has on each visit.'],
+  ['#noiseMap', 'Forage mass measurement error', 'How much error the forage mass sensor has: low, medium, or high.'],
+  ['#noiseCamera', 'Walk-over weight error', 'How much error the walk-over weight has on each visit.'],
   ['#noiseFill', 'Gut fill swing', 'How much an animal weight changes from day to day with feed and water in the gut.'],
   ['#seed', 'Random seed', 'The same seed repeats the same season exactly. Change it to see another season.'],
-  ['#calibrate', 'Calibration loop', 'Corrects each sensor bias against clips every 40 days.'],
+  ['#calibrate', 'Check once per rotation', 'Corrects each sensor bias against clips every 40 days.'],
   ['#useClips', 'Use clips', 'Lets clip results update the estimate. Off keeps the clips as an independent check.'],
-  ['#p1', 'Grass plot', 'Grass in the grazed paddock: true value, estimate with band, sensor readings, and the floor. Vertical lines are moves.'],
-  ['#p2', 'Weight plot', 'Herd-mean weight: camera readings, true weight, and the scale reference days.'],
-  ['#p3', 'Gain plot', 'Rolling gain from the camera, the true gain, and the gain-drop threshold.'],
+  ['#p1', 'Forage mass plot', 'Forage mass in the grazed paddock: true value, estimate with band, sensor readings, and the residual target. Vertical lines are moves.'],
+  ['#p2', 'Weight plot', 'Herd-mean body weight: walk-over weights, true weight, and the scale weight days.'],
+  ['#p3', 'ADG plot', 'ADG from the walk-over weights, the true ADG, and the ADG decline threshold.'],
   ['input[name=view]', 'Plot range', 'Show the whole season or only the last 60 days.'],
-  ['#log', 'Move log', 'Each move: the day, the paddock, the trigger, and whether it was a false move.'],
-  ['#compareBtn', 'Compare', 'Runs the season twice: the dual trigger, then a calendar with the same mean stay. Scores use the true state.'],
-  ['#sensorBtn', 'Compare sensors', 'Runs the season once with each biomass sensor and compares the results.'],
+  ['#log', 'Move log', 'Each move: the day, the paddock, the reason, and whether it was an early move.'],
+  ['#compareBtn', 'Compare', 'Runs the season twice: the residual and ADG rule, then a fixed rotation with the same mean grazing period. Scores use the true values.'],
+  ['#sensorBtn', 'Compare sensors', 'Runs the season once with each forage mass sensor and compares the results.'],
   ['#exportSimBtn', 'Export season', 'Saves this simulated season as field-record CSV, to practice with the field-data tools.'],
   ['.tabs', 'Data source', 'Switch between the simulation and your own field data.'],
   ['#csv', 'Field records', 'Your field records, one reading per row. Edit, paste, or load a file.'],
-  ['#applyBtn', 'Apply records', 'Checks the records and replays them through the estimator and the rule.'],
+  ['#applyBtn', 'Apply records', 'Checks the records and replays them through the best estimate and the move rule.'],
   ['#addRow', 'Add record', 'Adds one reading from the form.'],
   ['#addClips', 'Add quadrats', 'Adds one clip row per quadrat. Dry grams are converted to kg DM/ha.'],
   ['#urlBtn', 'Load from a URL', 'Loads records from a web address, for example a file that your processing pipeline writes.'],
