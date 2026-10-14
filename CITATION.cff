@@ -6,8 +6,8 @@ date-released: 2026-10-07
 license: MIT
 authors:
   - family-names: Koc
-    given-names: A. B.
-    affiliation: "Agricultural and Biosystems Engineering, Clemson University"
+    given-names: Ali Bulent
+    affiliation: "Clemson University"
 repository-code: "https://github.com/alibulentkoc/grazing-control-sim"
 abstract: "Design-stage teaching tool. Simulates a ten-paddock rotational grazing system one day at a time, with noisy sensors, an estimator, and move rules, and replays field records through the same estimator and rules. Results with placeholder parameters are not field results."
 keywords:

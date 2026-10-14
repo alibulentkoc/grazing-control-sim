@@ -4,7 +4,7 @@ Rotational grazing as a control loop: a live simulation that also replays field 
 
 Version 1.4.0. Design-stage teaching tool. Simulated results are not field results.
 
-Companion tool for the proposal "From Forage Biomass Maps to Feed Conversion and Move Timing on Rotationally Grazed Pastures" (USDA NIFA AFRI A1521). PI: Dr. A. B. Koc, Agricultural and Biosystems Engineering, Clemson University.
+Companion tool for the proposal "From Forage Biomass Maps to Feed Conversion and Move Timing on Rotationally Grazed Pastures" (USDA NIFA AFRI A1521). PI: Dr. Ali Bulent Koc, Clemson University.
 
 ## Relation to the proposal
 
