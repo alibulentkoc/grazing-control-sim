@@ -4,10 +4,11 @@
 // (estimator plus controller) reads records only. The simulator is one source of records; field data
 // entered by hand or imported as CSV is another. Both go through the same observer.
 // v1.2: sensor errors measured against clips in field records can replace the simulator placeholders.
+// v1.5: a parameter file (JSON) can set the farm layout, herd, and model constants within checked ranges.
 // v1.3: historical daily weather (NOAA GHCN-Daily CSV or a plain date,tmax,tmin,rain file) can drive the season.
 (function (root) {
 "use strict";
-var VERSION = "1.4.0";
+var VERSION = "1.5.0";
 
 // ---------- RNG (mulberry32, as grazing-sim rng.js) ----------
 function makeRng(seed) {
@@ -70,7 +71,9 @@ var BIO_SENSORS = { map: "UAV or rover map", plate: "Plate meter", visual: "Visu
 function mapRelSe(m) { var M = BASE.map; return m * Math.sqrt(M.calBiasSd * M.calBiasSd + M.flightBiasSd * M.flightBiasSd + M.rho * M.cellSd * M.cellSd + (1 - M.rho) * M.cellSd * M.cellSd / M.nCells); }
 function plateRelSe(m) { var P = BASE.plate; return m * Math.sqrt(P.calBiasSd * P.calBiasSd + P.passSd * P.passSd); }
 function visualRelSe(m) { var V = BASE.visual; return m * Math.sqrt(V.observerBiasSd * V.observerBiasSd + V.dailySd * V.dailySd); }
-var DEFAULT_REL_SE = { map: +mapRelSe(1).toFixed(3), uav: +mapRelSe(1).toFixed(3), rover: +mapRelSe(1).toFixed(3), plate: +plateRelSe(1).toFixed(3), visual: +visualRelSe(1).toFixed(3), clip: +(BASE.clip.spatialCv / Math.sqrt(BASE.clip.quadrats)).toFixed(3) };
+var DEFAULT_REL_SE = {};
+function refreshRelSe() { var m = mapRelSe(1); DEFAULT_REL_SE.map = +m.toFixed(3); DEFAULT_REL_SE.uav = +m.toFixed(3); DEFAULT_REL_SE.rover = +m.toFixed(3); DEFAULT_REL_SE.plate = +plateRelSe(1).toFixed(3); DEFAULT_REL_SE.visual = +visualRelSe(1).toFixed(3); DEFAULT_REL_SE.clip = +(BASE.clip.spatialCv / Math.sqrt(BASE.clip.quadrats)).toFixed(3); }
+refreshRelSe();
 
 var DEFAULT_SETTINGS = {
   source: "sim", mode: "dual", weather: "average", recordYear: null, seed: 42, bioSensor: "map",
@@ -487,6 +490,70 @@ function parseCSV(text) {
   if (rows.length && !(byType.uav || byType.rover || byType.map || byType.plate || byType.visual)) warnings.push("No biomass sensor readings: only clips, if used in the estimator, can inform it.");
   return { records: rows, errors: errors, warnings: warnings, startDate: startDate, counts: byType };
 }
+// ---------- Parameter file: farm layout, herd, and model constants ----------
+// Only the paths below can be changed, each within [min, max]; "int" values are rounded.
+var CONFIG_SCHEMA = {
+  "paddocks": [2, 30, "int", "number of paddocks in the rotation"], "areaHa": [0.05, 50, "", "area of each paddock, ha"],
+  "initialBiomass": [300, 6000, "", "initial standing biomass, kg DM/ha"], "initialCv": [0, 0.5, "", "CV of initial biomass between paddocks"],
+  "Bmin": [0, 2000, "", "ungrazeable residual, kg DM/ha"],
+  "grass.Rmax": [0, 200, "", "maximum growth, kg DM/ha/d"], "grass.Tmin": [-5, 15, "", "minimum growth temperature, deg C"],
+  "grass.Topt": [5, 35, "", "optimum growth temperature, deg C"], "grass.Tmax": [20, 45, "", "maximum growth temperature, deg C"],
+  "grass.Bref": [100, 3000, "", "half-saturation standing mass, kg DM/ha"], "grass.Bmax": [1000, 15000, "", "ceiling standing mass, kg DM/ha"],
+  "grass.senescence": [0, 0.1, "", "base senescence, per day"], "grass.TDNmax": [30, 90, "", "TDN at zero mass, percent"], "grass.TDNslope": [0, 40, "", "TDN decline at B_max, percent"],
+  "heatSenescenceT": [15, 45, "", "heat senescence threshold, deg C"], "heatSenescenceRate": [0, 0.1, "", "extra senescence when hot, per day"], "droughtSenescenceRate": [0, 0.1, "", "extra senescence when dry, per day"],
+  "weather.tempDailySdC": [0, 10, "", "daily temperature SD, deg C"], "weather.rainProbability": [0, 1, "", "chance of rain per day"], "weather.rainMeanMm": [0, 100, "", "mean rain on a wet day, mm"],
+  "weather.soil.fieldCapacityMm": [10, 400, "", "soil field capacity, mm"], "weather.soil.wiltingMm": [0, 200, "", "soil wilting point, mm"], "weather.soil.etPerDegC": [0, 1, "", "evapotranspiration per deg C, mm"],
+  "herd.head": [1, 200, "int", "head count"], "herd.initialBW": [50, 900, "", "mean starting body weight, kg"], "herd.initialBWSd": [0, 200, "", "SD of starting body weight, kg"],
+  "herd.dmiFracBW": [0.005, 0.05, "", "intake capacity, fraction of body weight per day"], "herd.heatT": [15, 40, "", "heat threshold for intake, deg C"],
+  "herd.heatSlopePerC": [0, 0.2, "", "intake loss per deg C above threshold"], "herd.heatMinFactor": [0, 1, "", "lowest heat factor on intake"],
+  "herd.biteSaturationKgHa": [100, 5000, "", "allowance saturation above B_min, kg DM/ha"], "herd.trampleFrac": [0, 0.6, "", "trampling loss, fraction of intake"],
+  "herd.grazingActivityFrac": [0, 1, "", "grazing activity increment on maintenance"], "herd.energyPerKgLossMcal": [1, 15, "", "energy per kg of tissue lost, Mcal"],
+  "herd.gutFillSdFrac": [0, 0.2, "", "gut fill SD, fraction of body weight"], "herd.gutFillAr1": [0, 0.99, "", "gut fill AR(1) coefficient"],
+  "camera.visitsPerDay": [0, 20, "", "station visits per animal per day"], "camera.animalOffsetSdFrac": [0, 0.3, "", "camera offset SD per animal, fraction of W"], "camera.visitSdFrac": [0, 0.3, "", "camera error per visit, fraction of W"],
+  "map.flightBiasSd": [0, 0.5, "", "map flight bias SD"], "map.calBiasSd": [0, 0.5, "", "map calibration bias SD"], "map.cellSd": [0, 1, "", "map cell error SD"], "map.rho": [0, 1, "", "shared share of map cell error"],
+  "plate.calBiasSd": [0, 0.6, "", "plate meter calibration bias SD"], "plate.passSd": [0, 0.6, "", "plate meter pass SD"], "plate.postExtraSd": [0, 0.6, "", "plate meter extra SD at exit"],
+  "visual.observerBiasSd": [0, 0.8, "", "visual observer bias SD"], "visual.dailySd": [0, 0.8, "", "visual daily SD"], "visual.shrink": [0, 1.5, "", "visual pull toward the center"], "visual.center": [0, 6000, "", "visual center, kg DM/ha"],
+  "clip.quadrats": [2, 200, "int", "clip quadrats per pass"], "clip.spatialCv": [0, 1.5, "", "within-paddock CV of quadrats"], "clip.labSd": [0, 0.3, "", "cutting and lab error"],
+  "scale.sdKg": [0, 30, "", "scale error SD, kg"], "scaleEveryDays": [1, 214, "int", "days between scale references"],
+  "est.regrowthPriorKgHaD": [0, 200, "", "estimator regrowth prior, kg DM/ha/d"]
+};
+var BASE_DEFAULTS = JSON.parse(JSON.stringify(BASE));
+function getPath(o, path) { return path.split(".").reduce(function (a, k) { return a == null ? undefined : a[k]; }, o); }
+function setPath(o, path, v) { var ks = path.split("."), a = o; for (var i = 0; i < ks.length - 1; i++) a = a[ks[i]]; a[ks[ks.length - 1]] = v; }
+function restoreDefaults() { var d = JSON.parse(JSON.stringify(BASE_DEFAULTS)); for (var k in d) BASE[k] = d[k]; refreshRelSe(); }
+function getConfig() {
+  var out = { format: "grazing-control-sim parameters", formatVersion: 1, toolVersion: VERSION, values: {} };
+  Object.keys(CONFIG_SCHEMA).forEach(function (k) { out.values[k] = getPath(BASE, k); });
+  return out;
+}
+// Accepts {values: {"herd.head": 12, ...}} or a nested object {herd: {head: 12}}. Starts from the defaults.
+// All-or-nothing: if any check fails, nothing changes.
+function applyConfig(obj) {
+  var res = { applied: [], clamped: [], unknown: [], errors: [] }, flat = {};
+  if (!obj || typeof obj !== "object") { res.errors.push("The file is not a JSON object."); return res; }
+  var src = obj.values && typeof obj.values === "object" ? obj.values : obj;
+  (function walk(o, pre) { for (var k in o) { if (["format", "formatVersion", "toolVersion", "note", "notes"].indexOf(k) >= 0 && !pre) continue;
+      var key = pre ? pre + "." + k : k; if (o[k] && typeof o[k] === "object" && !Array.isArray(o[k])) walk(o[k], key); else flat[key] = o[k]; } })(src, "");
+  var next = {};
+  for (var k in flat) {
+    var sc = CONFIG_SCHEMA[k]; if (!sc) { res.unknown.push(k); continue; }
+    var v = Number(flat[k]); if (!isFinite(v)) { res.errors.push(k + " is not a number."); continue; }
+    var c = clamp(sc[2] === "int" ? Math.round(v) : v, sc[0], sc[1]);
+    if (c !== v) res.clamped.push(k + " " + v + " -> " + c);
+    next[k] = c;
+  }
+  var val = function (k) { return next[k] !== undefined ? next[k] : getPath(BASE_DEFAULTS, k); };
+  if (!(val("grass.Tmin") < val("grass.Topt") && val("grass.Topt") < val("grass.Tmax"))) res.errors.push("Growth temperatures must satisfy Tmin < Topt < Tmax.");
+  if (!(val("weather.soil.wiltingMm") < val("weather.soil.fieldCapacityMm"))) res.errors.push("The wilting point must be below field capacity.");
+  if (!(val("Bmin") < val("initialBiomass"))) res.errors.push("The initial biomass must be above B_min.");
+  if (!(val("grass.Bref") < val("grass.Bmax"))) res.errors.push("B_ref must be below B_max.");
+  if (res.errors.length) return res;
+  restoreDefaults();
+  for (var k2 in next) { setPath(BASE, k2, next[k2]); res.applied.push(k2); }
+  refreshRelSe();
+  return res;
+}
+
 // ---------- Historical daily weather ----------
 // Accepts (a) NOAA GHCN-Daily CSV as downloaded from NCEI (quoted columns, DATE plus TMAX, TMIN, PRCP,
 // optional TAVG and NAME), or (b) a plain file with columns date, tmax, tmin, rain (optional tavg).
@@ -685,6 +752,6 @@ var api = { VERSION: VERSION, BASE: BASE, DEFAULT_SETTINGS: DEFAULT_SETTINGS, LI
   BIO_SENSORS: BIO_SENSORS, DEFAULT_REL_SE: DEFAULT_REL_SE, TYPES: TYPES, CSV_COLUMNS: CSV_COLUMNS,
   sanitize: sanitize, createSim: createSim, createFieldRun: createFieldRun, compare: compare, compareSensors: compareSensors, scoreSim: scoreSim,
   parseCSV: parseCSV, exportCSV: exportCSV, sensorErrors: sensorErrors, parseWeatherCSV: parseWeatherCSV, seasonFromRecord: seasonFromRecord,
-  setWeatherRecord: setWeatherRecord, runYears: runYears, recordNormals: recordNormals, WX: WX, SIM_SENSOR_OF: SIM_SENSOR_OF, addDays: addDays, normalTemp: normalTemp };
+  setWeatherRecord: setWeatherRecord, getConfig: getConfig, applyConfig: applyConfig, restoreDefaults: restoreDefaults, CONFIG_SCHEMA: CONFIG_SCHEMA, runYears: runYears, recordNormals: recordNormals, WX: WX, SIM_SENSOR_OF: SIM_SENSOR_OF, addDays: addDays, normalTemp: normalTemp };
 if (typeof module !== "undefined" && module.exports) module.exports = api; else root.GCS = api;
 })(this);

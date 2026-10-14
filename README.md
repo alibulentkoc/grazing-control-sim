@@ -2,13 +2,13 @@
 
 Rotational grazing as a control loop: a live simulation that also replays field records.
 
-Version 1.4.0. Design-stage teaching tool. Simulated results are not field results.
+Version 1.5.0. Design-stage teaching tool. Simulated results are not field results.
 
-Companion tool for the proposal "From Forage Biomass Maps to Feed Conversion and Move Timing on Rotationally Grazed Pastures" (USDA NIFA AFRI A1521). PI: Dr. Ali Bulent Koc, Clemson University.
+A teaching, self-learning, and idea-checking tool for sensor-based rotational grazing. PI: Dr. Ali Bulent Koc, Clemson University.
 
-## Relation to the proposal
+## Purpose
 
-Proposal version 5 uses the residual floor as the move trigger and reads herd-mean gain once per rotation cycle to retune the floor (proposal Figure 5). This tool runs the daily loop: the dual trigger, the grass-only rule, and the calendar. The cycle-scale retune is not in this version. Proposal Figure 7 is a screenshot of the Explore level.
+The tool is for teaching, self-learning, and checking design ideas: how sensor error, estimation, and move rules interact in rotational grazing. It is not a field result and not part of any proposal text. With its default placeholder parameters it shows trends, not a specific farm. A parameter file (below) and field records move it toward a given farm.
 
 ## What it does
 
@@ -49,6 +49,18 @@ The simulator's sensor errors are placeholders. Field data replaces them.
 When the clip mean's sampling error is as large as the measured scatter, the sensor's share cannot be separated. The table says "not resolved" and offers the measured scatter as a conservative value.
 
 The same path carries a pipeline feed. The lab's processing scripts write a CSV in the record format, for example `data/field-records.csv` in this repository. On GitHub Pages, "Load from a URL" with that path reads it. Loading from other sites works only if they allow cross-origin requests. It does not work from a local file or inside the claude.ai preview, where "Load a CSV file" does the same job.
+
+## Help panel
+
+Point at any box, button, slider, plot, or paddock to see a short explanation in the help panel. On a wide screen the panel sits in the right margin. On a narrow screen or a phone it is a strip at the bottom, and a tap shows the help. The panel never covers the page. It is on by default at the Explore and Learn levels and off at the Research level; the Help panel button switches it, and the choice is remembered per level.
+
+## Parameter file
+
+At the Research level, "Model and farm parameters (file)" holds the active parameters as JSON. It covers the farm layout (number and area of paddocks), the herd (head count, starting weight), and the model constants (growth, senescence, weather generator, soil bucket, intake, gut fill, sensor errors, clips, scale, estimator prior). Every value has an allowed range, and out-of-range values are clamped and reported. A file that breaks a consistency check (Tmin < Topt < Tmax, wilting point below field capacity, initial biomass above B_min, B_ref below B_max) changes nothing. A file starts from the defaults, so values it does not list keep their default. Load, edit, apply, download, or reset; the active file is kept in the browser. Minimal example:
+
+```json
+{ "values": { "paddocks": 8, "areaHa": 0.5, "herd.head": 14, "herd.initialBW": 280, "grass.Rmax": 55 } }
+```
 
 ## Three levels
 
@@ -223,6 +235,7 @@ With 12 quadrats and a within-paddock CV of 0.30 (placeholder), the clip mean ha
 
 ## Version history
 
+- v1.5.0 (October 14, 2026): help panel on hover, focus, or tap; parameter file for farm layout, herd, and model constants; herd and paddock text follows the loaded file.
 - v1.4.0 (October 7, 2026): Explore, Learn, and Research levels on the same engine; grass-only controller mode for Explore.
 - v1.3.0 (September 30, 2026): historical daily weather from NOAA GHCN-Daily or a plain CSV; replay any season; run all seasons with percentiles.
 - v1.2.0 (September 30, 2026): clip quadrat form, sensor error against clips, measured errors sent to the simulator, load from a URL for a pipeline feed.

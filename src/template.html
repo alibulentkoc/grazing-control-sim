@@ -161,6 +161,21 @@ textarea { width: 100%; font-family: "Courier New", Courier, monospace; font-siz
 .relse input { width: 80px; }
 [hidden] { display: none !important; }
 
+/* help panel (side on wide screens, bottom strip on narrow ones; never over the content) */
+#helpPanel { display: none; position: fixed; z-index: 30; background: var(--panel); border: 1px solid var(--rule); border-left: 3px solid var(--navy); padding: 12px 14px; font-size: 0.92rem; line-height: 1.45; }
+#helpPanel .hp-k { font-size: 0.78rem; color: var(--muted); text-transform: none; margin-bottom: 4px; }
+#helpPanel .hp-t { font-weight: bold; color: var(--navy); margin-bottom: 4px; }
+body.help-on #helpPanel { display: block; }
+.help-hl { outline: 2px dashed var(--ochre); outline-offset: 2px; }
+@media (min-width: 1100px) {
+  body.help-on { padding-right: 300px; }
+  #helpPanel { top: calc(90px + env(safe-area-inset-top, 0px)); right: 16px; width: 268px; max-height: calc(100% - 120px); overflow-y: auto; }
+}
+@media (max-width: 1099px) {
+  body.help-on { padding-bottom: 120px; }
+  #helpPanel { left: 0; right: 0; bottom: 0; max-height: 116px; overflow-y: auto; border-left: 1px solid var(--rule); border-top: 3px solid var(--navy); padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px)); }
+}
+.cfgbox textarea { width: 100%; min-height: 220px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.82rem; background: var(--panel); color: var(--ink); border: 1px solid var(--rule); padding: 8px; }
 /* levels */
 body[data-level="explore"] .lv-hide-explore, body:not([data-level="explore"]) .lv-explore,
 body:not([data-level="learn"]) .lv-learn, body:not([data-level="research"]) .lv-research { display: none !important; }
@@ -211,6 +226,7 @@ body:not([data-level="learn"]) .lv-learn, body:not([data-level="research"]) .lv-
     <button type="button" data-level="learn" aria-pressed="false">Learn</button>
     <button type="button" data-level="research" aria-pressed="false">Research</button>
     <span class="lvnote" id="lvNote"></span>
+    <button type="button" id="helpToggle" aria-pressed="false" style="margin-left:auto">Help panel: off</button>
   </nav>
 </header>
 
@@ -587,9 +603,23 @@ body:not([data-level="learn"]) .lv-learn, body:not([data-level="research"]) .lv-
   <div class="tw" id="errOut"><p class="small muted">Apply records that include clips and at least one sensor on the same paddock and day.</p></div>
 </section>
 
+<section class="rule-top lv-research cfgbox" id="cfgSec" data-only="sim">
+  <h2>Model and farm parameters (file)</h2>
+  <p class="small">One JSON file sets the farm layout (number and area of paddocks), the herd (head count and starting weight), and the model constants, each within a checked range. Use it to save a calibrated setup, share it, and repeat a run exactly. A file starts from the defaults: values it does not list keep their default. A file that breaks a consistency check (for example Tmin &lt; Topt &lt; Tmax) changes nothing.</p>
+  <div class="btnrow">
+    <label class="small">Load a parameter file <input type="file" id="cfgFile" accept=".json,application/json,text/plain"></label>
+    <button type="button" id="cfgApply" class="primary">Apply the text below</button>
+    <button type="button" id="cfgDl">Download</button>
+    <button type="button" id="cfgCopy">Copy</button>
+    <button type="button" id="cfgReset">Reset to defaults</button>
+  </div>
+  <div class="report" id="cfgReport" role="status"></div>
+  <textarea id="cfgText" spellcheck="false" aria-label="Parameter file as JSON"></textarea>
+</section>
+
 <section class="rule-top lv-research">
   <h2>Parameters</h2>
-  <p class="small">Every value comes from grazing-sim v0.1.0 (config/default.json and the parameter ledger) unless marked otherwise. Placeholders must be replaced with lab and regional values before any number here is quoted.</p>
+  <p class="small">The table lists the default values. A loaded parameter file overrides them; the active values are in the parameter file above. Every value comes from grazing-sim v0.1.0 (config/default.json and the parameter ledger) unless marked otherwise. Placeholders must be replaced with lab and regional values before any number here is quoted.</p>
   <div class="tw"><table id="ptable"><thead><tr><th>Parameter</th><th>Value</th><th>Source</th><th>Status</th></tr></thead><tbody></tbody></table></div>
 </section>
 
@@ -599,6 +629,7 @@ body:not([data-level="learn"]) .lv-learn, body:not([data-level="research"]) .lv-
   <span>Dr. Ali Bulent Koc, Clemson University. Code MIT license.</span>
 </footer>
 </main>
+<aside id="helpPanel" aria-live="polite"><div class="hp-k">Help: point at any part of the page</div><div class="hp-t" id="helpTitle">How to use this page</div><div id="helpText">Move the mouse over a box, button, slider, or plot to see what it does. On a touch screen, tap it. Use the Help panel button to turn this off.</div></aside>
 
 <noscript><p style="padding:20px">This simulation needs JavaScript.</p></noscript>
 <script>
@@ -892,8 +923,9 @@ function renderRing() {
   }
   out += "<circle class=\"ctr\" cx=\"160\" cy=\"160\" r=\"46\"/><text x=\"160\" y=\"156\" text-anchor=\"middle\" style=\"font-size:11.5px\">water and</text><text x=\"160\" y=\"171\" text-anchor=\"middle\" style=\"font-size:11.5px\">weigh station</text>";
   $("ring").innerHTML = out;
-  $("ringCap").textContent = level === "explore" ? "Ten 1-acre paddocks around the water trough. Darker green means more grass. Numbers are pounds of grass per acre. The outlined paddock has the cattle." : field ? "Paddocks around the water point. Shade is the estimated standing biomass, since the truth is not known. The outlined paddock holds the herd." :
-    "Ten 1-acre paddocks around the water point, where the walk-through station sits. Shade is true standing biomass. The outlined paddock holds the herd.";
+  var padTxt = s.trueB.length + " paddocks of " + (G.BASE.areaHa * 2.4711).toFixed(1) + " acre each";
+  $("ringCap").textContent = level === "explore" ? padTxt + " around the water trough. Darker green means more grass. Numbers are pounds of grass per acre. The outlined paddock has the cattle." : field ? "Paddocks around the water point. Shade is the estimated standing biomass, since the truth is not known. The outlined paddock holds the herd." :
+    padTxt + " around the water point, where the walk-through station sits. Shade is true standing biomass. The outlined paddock holds the herd.";
   var ev = s.events, last = ev.length ? ev[ev.length - 1] : null;
   $("ringRead").innerHTML =
     "<div><span>Herd in</span><span>paddock " + (s.cur + 1) + ", day " + s.stay + "</span></div>" +
@@ -1309,6 +1341,7 @@ function setLevel(lv, init) {
   Array.prototype.forEach.call(document.querySelectorAll(".levels [data-level]"), function (b) { b.setAttribute("aria-pressed", b.getAttribute("data-level") === lv ? "true" : "false"); });
   setText("lvNote", LVNOTE[lv]);
   try { localStorage.setItem(LVKEY, lv); } catch (e) {}
+  if (typeof syncHelp === "function" && document.getElementById("helpToggle")) syncHelp();
   if (!init) { if (lv !== "explore") save(); syncControls(); syncEx(); reset(); showInfo(isField() ? "field" : "about"); setStatus(lv === "explore" ? "Explore level. Press Play." : "Level changed."); }
 }
 Array.prototype.forEach.call(document.querySelectorAll(".levels [data-level]"), function (b) { b.addEventListener("click", function () { setLevel(b.getAttribute("data-level")); }); });
@@ -1339,7 +1372,7 @@ function renderExplore() {
   var W = 0; s.herd.forEach(function (a) { W += a.BW; }); W /= s.herd.length;
   setText("exA1", "Paddock " + (s.cur + 1) + ", day " + s.stay + " here");
   setText("exA2", "Grass: " + n0(lb(B)) + " lb/acre (real)");
-  setText("exA3", "10 cattle, about " + n0(W * 2.2046) + " lb each");
+  setText("exA3", s.herd.length + " cattle, about " + n0(W * 2.2046) + " lb each");
   setText("exB1", mo ? "Drone reading today:" : "No drone flight today.");
   setText("exB2", mo ? n0(lb(mo.raw)) + " lb/acre" : "Best guess: " + n0(lb(Bh)) + " lb/acre");
   setText("exB3", "Sensor quality: " + ex.quality);
@@ -1384,11 +1417,145 @@ function renderExplore() {
     "<div><span><b>Grass health</b></span><span><b>" + health + "</b></span></div>";
 }
 
+// ---------- parameter file ----------
+var CFGKEY = "grazing-control-sim-config";
+function cfgMsg(items) { $("cfgReport").innerHTML = items.map(function (x) { return "<div class=\"" + x[0] + "\">" + esc(x[1]) + "</div>"; }).join(""); }
+function cfgShow() { $("cfgText").value = JSON.stringify(G.getConfig(), null, 2); }
+function cfgApplyText(text, quiet) {
+  var obj; try { obj = JSON.parse(text); } catch (e) { cfgMsg([["err", "Not valid JSON: " + e.message]]); return false; }
+  var r = G.applyConfig(obj);
+  if (r.errors.length) { cfgMsg(r.errors.map(function (e) { return ["err", e + " Nothing was changed."]; })); return false; }
+  try { localStorage.setItem(CFGKEY, text); } catch (e) {}
+  if (!quiet) {
+    var items = [["ok", r.applied.length + " values applied (" + G.BASE.paddocks + " paddocks of " + G.BASE.areaHa + " ha, " + G.BASE.herd.head + " head). The season restarted."]];
+    r.clamped.forEach(function (c) { items.push(["warn", "Kept inside its allowed range: " + c]); });
+    if (r.unknown.length) items.push(["warn", "Ignored, not a known parameter: " + r.unknown.join(", ")]);
+    cfgMsg(items);
+  }
+  cfgShow(); if (!isField()) reset(); return true;
+}
+$("cfgApply").addEventListener("click", function () { cfgApplyText($("cfgText").value); });
+$("cfgReset").addEventListener("click", function () { G.restoreDefaults(); try { localStorage.removeItem(CFGKEY); } catch (e) {} cfgShow(); cfgMsg([["ok", "Defaults restored. The season restarted."]]); if (!isField()) reset(); });
+$("cfgFile").addEventListener("change", function () { var f = this.files && this.files[0]; if (!f) return; var rd = new FileReader(); rd.onload = function () { $("cfgText").value = String(rd.result); cfgApplyText(String(rd.result)); }; rd.readAsText(f); });
+$("cfgCopy").addEventListener("click", function () { var t = $("cfgText"); t.select(); try { document.execCommand("copy"); cfgMsg([["ok", "Copied."]]); } catch (e) { cfgMsg([["warn", "Select the text and copy it by hand."]]); } });
+$("cfgDl").addEventListener("click", function () {
+  try { var a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([JSON.stringify(G.getConfig(), null, 2)], { type: "application/json" })); a.download = "grazing-parameters.json"; document.body.appendChild(a); a.click(); a.remove(); cfgMsg([["ok", "Download started. If nothing happened, use Copy."]]); }
+  catch (e) { cfgMsg([["warn", "Download is not available here. Use Copy."]]); }
+});
+
+// ---------- help panel ----------
+var HELP = [
+  ['.levels [data-level="explore"]', 'Explore level', 'The simple view: the idea in plain words, for anyone.'],
+  ['.levels [data-level="learn"]', 'Learn level', 'For students: the full control loop, plots, scenarios, and exercises.'],
+  ['.levels [data-level="research"]', 'Research level', 'Everything: field data, weather records, calibration, parameter files, and the parameter table.'],
+  ['#helpToggle', 'Help panel', 'Turns this help panel on or off.'],
+  ['#playBtn', 'Play or Pause', 'Runs the season one day at a time. Press again to pause. The space bar does the same.'],
+  ['#stepBtn', 'Step one day', 'Moves forward exactly one day, so you can watch each decision.'],
+  ['#resetBtn', 'Reset', 'Starts the season again from day 0. The same seed gives the same weather and animals.'],
+  ['#speed', 'Speed', 'How many simulated days pass each second while the season plays.'],
+  ['#dayRead', 'Day', 'The current day of the grazing season, April 1 to October 31.'],
+  ['#exA', '1. Grass and cattle', 'The real paddock and herd. Only the simulation knows these true numbers.'],
+  ['#exB', '2. Measure', 'What the sensor reports today. Sensors have error, so the reading is not exactly the real value.'],
+  ['#exC', '3. Decide', 'The rule compares the grass estimate with your target. The box turns red on a day the herd moves.'],
+  ['#exD', '4. Act', 'Opening the gate moves the herd to the next paddock.'],
+  ['input[name=exRule]', 'How to decide', 'Move when the grass gets short (uses the sensor), or move every 4 days (ignores the sensor).'],
+  ['#exFloor', 'Grass to leave', 'The least grass to leave in a paddock, in pounds per acre. More grass left means faster regrowth.'],
+  ['#exQuality', 'Sensor quality', 'How accurate the drone reading is. A poor sensor can move the herd too early or too late.'],
+  ['[data-ex]', 'Challenge', 'Loads a challenge with a goal. Then press Play.'],
+  ['#exFill', 'Grass gauge', 'Green bar: the real grass. Red mark: the sensor best guess. Dashed line: your target.'],
+  ['#exWtTxt', 'Average animal', 'The average weight of the cattle, and how much they gained in the last week.'],
+  ['#exReport', 'Season report', 'A running score: moves, grass left, paddocks grazed too short, and weight gained.'],
+  ['#exMsg', 'What happened', 'A diary of each move: how much grass was left and whether it was too short.'],
+  ['#ring', 'Paddock ring', 'The paddocks around the water point. Darker green means more grass. The outlined paddock has the herd.'],
+  ['#b-set', 'Setpoints', 'Your targets: the grass floor, the gain-drop limit, and the shortest and longest stay. Click a block for more.'],
+  ['#b-ctrl', 'Controller', 'The move rule. Each morning it decides stay or move from estimates only. It flashes when it fires.'],
+  ['#b-act', 'Actuator', 'Carries out the decision: open the gate and move the herd.'],
+  ['#b-plant', 'Plant', 'The real paddock and herd. The controller never sees these true values.'],
+  ['#b-dist', 'Disturbances', 'Things nobody controls: temperature, rain, and soil water.'],
+  ['#b-sens', 'Sensors', 'Biomass readings, the camera at the water point, and the ear tags. Each has error.'],
+  ['#b-est', 'Estimator', 'Turns noisy, scattered readings into a best guess with an uncertainty band.'],
+  ['#b-outer', 'Outer loop', 'A slower loop that recalibrates the sensors against clips. Off unless turned on.'],
+  ['[data-scn]', 'Scenario', 'Loads ready-made settings. Then press Play.'],
+  ['input[name=mode]', 'Controller mode', 'Calendar moves on fixed days and ignores the sensors (open loop). The dual trigger moves when grass or gain says so (closed loop).'],
+  ['#calendarDays', 'Calendar stay', 'Days in each paddock when the herd moves by calendar.'],
+  ['#floor', 'Residual floor B*', 'The herd moves when the estimated grass falls to this level.'],
+  ['#delta', 'Gain drop', 'The herd moves when the rolling gain falls this far below its best value in the paddock.'],
+  ['#dmin', 'Minimum stay', 'The herd cannot move sooner, even if one noisy reading says so.'],
+  ['#dmax', 'Maximum stay', 'The herd always moves after this many days.'],
+  ['#window', 'Gain window', 'Days of camera weights used for the rolling gain. Longer is steadier but slower.'],
+  ['#bioSensor', 'Biomass sensor', 'The sensor the controller uses: a map, a plate meter, or a visual estimate.'],
+  ['#weather', 'Weather', 'The season weather: average, dry, wet, or one year of a loaded weather record.'],
+  ['#recordYear', 'Record year', 'Which year of the loaded weather record to replay.'],
+  ['#noiseMap', 'Biomass sensor error', 'How much error the biomass sensor has: low, medium, or high.'],
+  ['#noiseCamera', 'Camera error', 'How much error the weight camera has on each visit.'],
+  ['#noiseFill', 'Gut fill swing', 'How much an animal weight changes from day to day with feed and water in the gut.'],
+  ['#seed', 'Random seed', 'The same seed repeats the same season exactly. Change it to see another season.'],
+  ['#calibrate', 'Calibration loop', 'Corrects each sensor bias against clips every 40 days.'],
+  ['#useClips', 'Use clips', 'Lets clip results update the estimate. Off keeps the clips as an independent check.'],
+  ['#p1', 'Grass plot', 'Grass in the grazed paddock: true value, estimate with band, sensor readings, and the floor. Vertical lines are moves.'],
+  ['#p2', 'Weight plot', 'Herd-mean weight: camera readings, true weight, and the scale reference days.'],
+  ['#p3', 'Gain plot', 'Rolling gain from the camera, the true gain, and the gain-drop threshold.'],
+  ['input[name=view]', 'Plot range', 'Show the whole season or only the last 60 days.'],
+  ['#log', 'Move log', 'Each move: the day, the paddock, the trigger, and whether it was a false move.'],
+  ['#compareBtn', 'Compare', 'Runs the season twice: the dual trigger, then a calendar with the same mean stay. Scores use the true state.'],
+  ['#sensorBtn', 'Compare sensors', 'Runs the season once with each biomass sensor and compares the results.'],
+  ['#exportSimBtn', 'Export season', 'Saves this simulated season as field-record CSV, to practice with the field-data tools.'],
+  ['.tabs', 'Data source', 'Switch between the simulation and your own field data.'],
+  ['#csv', 'Field records', 'Your field records, one reading per row. Edit, paste, or load a file.'],
+  ['#applyBtn', 'Apply records', 'Checks the records and replays them through the estimator and the rule.'],
+  ['#addRow', 'Add record', 'Adds one reading from the form.'],
+  ['#addClips', 'Add quadrats', 'Adds one clip row per quadrat. Dry grams are converted to kg DM/ha.'],
+  ['#urlBtn', 'Load from a URL', 'Loads records from a web address, for example a file that your processing pipeline writes.'],
+  ['#fileIn', 'Load a CSV file', 'Loads a file of field records.'],
+  ['#exampleBtn', 'Example records', 'Loads 60 days of simulated records to try the field tools.'],
+  ['#errOut', 'Sensor error', 'Each sensor bias and scatter against your clips. You can send measured errors to the simulator.'],
+  ['#wxFile', 'Weather record', 'Loads a daily weather record (NOAA GHCN-Daily or a plain CSV).'],
+  ['#wxRunAll', 'Run all years', 'Runs every usable year of the weather record and shows the range of outcomes.'],
+  ['#cfgText', 'Parameter file', 'The farm and model parameters as JSON. Edit the values, then Apply.'],
+  ['#cfgApply', 'Apply', 'Checks the parameter text and applies it. The season restarts.'],
+  ['#cfgReset', 'Reset to defaults', 'Returns every parameter to its default value.'],
+  ['#cfgDl', 'Download', 'Saves the active parameters as a JSON file.'],
+  ['#cfgFile', 'Load a parameter file', 'Loads a JSON parameter file and applies it.'],
+  ['#ptable', 'Parameter table', 'Every default value with its source and status. Placeholders still need field values.'],
+  ['#info', 'Explanations', 'Plain explanations. Click a diagram block to read about it here.']
+];
+(function () {
+  HELP.forEach(function (h) {
+    Array.prototype.forEach.call(document.querySelectorAll(h[0]), function (el) {
+      var tgts = [el];
+      if (el.tagName === "INPUT" || el.tagName === "SELECT") { var lb = el.closest("label"), f = el.closest(".f"); if (lb) tgts.push(lb); if (f) tgts.push(f); }
+      if (el.id === "exFill") { var g = el.closest(".gauge"); if (g) tgts.push(g); }
+      tgts.forEach(function (t) { if (!t.hasAttribute("data-help")) { t.setAttribute("data-help", h[2]); t.setAttribute("data-help-title", h[1]); } });
+    });
+  });
+})();
+var HELPKEY = "grazing-control-sim-help", helpPref = {}, helpCur = null;
+try { helpPref = JSON.parse(localStorage.getItem(HELPKEY) || "{}") || {}; } catch (e) {}
+function helpOn() { var hp = helpPref || {}; return hp[level] !== undefined ? hp[level] : level !== "research"; }
+function syncHelp() {
+  var on = helpOn(); document.body.classList.toggle("help-on", on);
+  $("helpToggle").setAttribute("aria-pressed", on ? "true" : "false"); $("helpToggle").textContent = "Help panel: " + (on ? "on" : "off");
+  if (!on && helpCur) { helpCur.classList.remove("help-hl"); helpCur = null; }
+}
+$("helpToggle").addEventListener("click", function () { helpPref = helpPref || {}; helpPref[level] = !helpOn(); try { localStorage.setItem(HELPKEY, JSON.stringify(helpPref)); } catch (e) {} syncHelp(); drawPlots(); });
+function showHelp(el) {
+  if (!helpOn()) return;
+  var t = el && el.closest ? el.closest("[data-help]") : null; if (!t || t === helpCur) return;
+  if (helpCur) helpCur.classList.remove("help-hl");
+  helpCur = t; t.classList.add("help-hl");
+  setText("helpTitle", t.getAttribute("data-help-title") || ""); setText("helpText", t.getAttribute("data-help"));
+}
+document.addEventListener("mouseover", function (e) { showHelp(e.target); });
+document.addEventListener("focusin", function (e) { showHelp(e.target); });
+document.addEventListener("pointerdown", function (e) { if (e.pointerType === "touch") showHelp(e.target); });
+
 // ---------- start ----------
 try { var wsv = JSON.parse(localStorage.getItem(WXKEY) || "null"); if (wsv && wsv.text) { $("wxUnits").value = wsv.units || "auto"; loadWx(wsv.text, true); } else renderWx(null, true); } catch (e) { renderWx(null, true); }
 $("csv").value = fieldText;
 (function () { var q = (location.search.match(/[?&]level=(explore|learn|research)/) || [])[1], sv = null; try { sv = localStorage.getItem(LVKEY); } catch (e) {} setLevel(q || sv || "learn", true); })();
-syncEx(); setGoal();
+try { var cfgSaved = localStorage.getItem(CFGKEY); if (cfgSaved) cfgApplyText(cfgSaved, true); } catch (e) {}
+cfgShow();
+syncEx(); setGoal(); syncHelp();
 syncControls(); reset(); showInfo(isField() ? "field" : "about");
 window.addEventListener("resize", function () { drawPlots(); });
 })();

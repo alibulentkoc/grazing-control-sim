@@ -1,6 +1,6 @@
 {
   "name": "grazing-control-sim",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "description": "Live control-loop simulation of rotational grazing with field-data replay. Design-stage teaching tool, not field results.",
   "license": "MIT",
   "private": true,

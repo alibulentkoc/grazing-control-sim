@@ -109,6 +109,18 @@ t('quadrat conversion', Math.abs(60 / 0.25 * 10 - 2400) < 1e-9);
 { const r = G.createSim({ mode: 'grass', noiseCamera: 'high', noiseFill: 'high' }).run();
   t('grass mode: no gain moves', r.moves.every(m => m.fired !== 'gain' && m.fired !== 'grass and gain'));
   t('grass mode sanitized', G.sanitize({ mode: 'grass' }).mode === 'grass' && G.sanitize({ mode: 'bogus' }).mode === 'dual'); }
+// 18 parameter file: applies within ranges, rejects inconsistent files, and restores defaults
+{ const r = G.applyConfig({ values: { paddocks: 8, "herd.head": 12, "herd.initialBW": 250, "clip.quadrats": 999 } });
+  t('config applied', r.errors.length === 0 && r.applied.includes('paddocks') && r.clamped.length === 1);
+  const sim = G.createSim({ seed: 3 }).run();
+  t('config changes the farm', sim.trueB.length === 8 && sim.herd.length === 12 && G.BASE.clip.quadrats === 200);
+  t('config export round trip', JSON.stringify(G.applyConfig(G.getConfig()).errors) === '[]' && G.BASE.paddocks === 8);
+  const bad = G.applyConfig({ grass: { Tmin: 12, Topt: 10 } });
+  t('inconsistent file rejected, nothing changed', bad.errors.length > 0 && G.BASE.paddocks === 8);
+  const unk = G.applyConfig({ values: { bogus: 1 } });
+  t('unknown keys reported', unk.unknown.includes('bogus'));
+  G.restoreDefaults();
+  t('defaults restored', G.BASE.paddocks === 10 && G.BASE.herd.head === 10 && G.BASE.clip.quadrats === 12); }
 // 12 biomass non-negative
 t('biomass nonneg', r.log.Btrue.every(v => v >= 0));
 // 13 ASCII-only source
