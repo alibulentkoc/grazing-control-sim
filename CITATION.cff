@@ -1,0 +1,18 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "grazing-control-sim: rotational grazing as a control loop, live simulation"
+version: 1.4.0
+date-released: 2026-10-07
+license: MIT
+authors:
+  - family-names: Koc
+    given-names: A. B.
+    affiliation: "Agricultural and Biosystems Engineering, Clemson University"
+repository-code: "https://github.com/alibulentkoc/grazing-control-sim"
+abstract: "Design-stage teaching tool. Simulates a ten-paddock rotational grazing system one day at a time, with noisy sensors, an estimator, and move rules, and replays field records through the same estimator and rules. Results with placeholder parameters are not field results."
+keywords:
+  - rotational grazing
+  - control loop
+  - digital twin
+  - forage biomass
+  - walk-over weighing

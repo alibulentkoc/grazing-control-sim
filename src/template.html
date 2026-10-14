@@ -1,0 +1,1397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Rotational Grazing as a Control Loop: Live Simulation</title>
+<style>
+:root {
+  --paper: #F6F1E6; --panel: #FFFDF8; --ink: #2A2A2A; --muted: #666666; --rule: #CFC6B3; --rule2: #E4DCCB;
+  --navy: #1F3352; --burg: #7A2331; --forest: #2F5A3C; --ochre: #8A6718; --ochre2: #9A7422;
+  --grass0: #EDE5D2; --band: rgba(122,35,49,0.14); --gband: rgba(31,51,82,0.10);
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #1B2029; --panel: #222934; --ink: #E7E1D4; --muted: #A9A39A; --rule: #434C5A; --rule2: #333B48;
+    --navy: #A9BDDC; --burg: #D4919B; --forest: #93BE9F; --ochre: #D6B86E; --ochre2: #D6B86E;
+    --grass0: #39404A; --band: rgba(212,145,155,0.18); --gband: rgba(169,189,220,0.14);
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #1B2029; --panel: #222934; --ink: #E7E1D4; --muted: #A9A39A; --rule: #434C5A; --rule2: #333B48;
+  --navy: #A9BDDC; --burg: #D4919B; --forest: #93BE9F; --ochre: #D6B86E; --ochre2: #D6B86E;
+  --grass0: #39404A; --band: rgba(212,145,155,0.18); --gband: rgba(169,189,220,0.14);
+}
+html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+*, *::before, *::after { box-sizing: inherit; }
+body { margin: 0; background: var(--paper); color: var(--ink);
+  font-family: Georgia, "Times New Roman", Times, serif; font-size: 16px; line-height: 1.5; }
+main { max-width: 1240px; margin: 0 auto; padding: 20px 20px 40px; }
+h1 { font-size: 1.75rem; font-weight: normal; color: var(--navy); margin: 0 0 4px; letter-spacing: 0.005em; }
+h2 { font-size: 1.2rem; font-weight: normal; color: var(--navy); margin: 0 0 8px; }
+h3 { font-size: 1rem; font-weight: bold; color: var(--burg); margin: 14px 0 4px; }
+p { margin: 0 0 10px; max-width: 76ch; }
+.lede { color: var(--muted); font-style: italic; margin-bottom: 14px; }
+header { border-bottom: 2px solid var(--navy); padding-bottom: 10px; margin-bottom: 16px; }
+section { margin-top: 26px; }
+.rule-top { border-top: 1px solid var(--rule); padding-top: 14px; }
+.small { font-size: 0.86rem; }
+.muted { color: var(--muted); }
+
+/* hero: live diagram and ring */
+.hero { display: grid; grid-template-columns: minmax(0, 2.45fr) minmax(0, 1fr); gap: 18px; align-items: start; }
+.fig { background: var(--panel); border: 1px solid var(--rule); padding: 10px 10px 6px; }
+.fig svg { display: block; width: 100%; height: auto; }
+.dwrap { overflow-x: auto; }
+@media (max-width: 700px) { #diagram { min-width: 660px; } }
+.cap { font-size: 0.84rem; color: var(--muted); margin: 6px 2px 0; }
+.cap b { color: var(--ink); font-weight: bold; }
+
+svg text { font-family: Georgia, "Times New Roman", serif; fill: var(--ink); }
+.blk rect.box { fill: var(--panel); stroke: var(--navy); stroke-width: 1.3; }
+.blk { cursor: pointer; }
+.blk:focus { outline: none; }
+.blk:focus rect.box, .blk:hover rect.box { stroke-width: 2.4; }
+.blk.sel rect.box { stroke: var(--burg); stroke-width: 2.4; }
+.blk .t { font-size: 13.5px; font-weight: bold; fill: var(--navy); }
+.blk .v { font-size: 12.5px; }
+.blk .m { font-size: 11.5px; fill: var(--muted); }
+#b-ctrl rect.box { transition: fill 0.25s; }
+#b-ctrl.fire rect.box { fill: var(--burg); }
+#b-ctrl.fire text { fill: #FFFDF8; }
+.outer rect.box { stroke-dasharray: 6 4; stroke: var(--muted); fill: none; }
+.outer .t { fill: var(--muted); }
+.sig { fill: none; stroke: var(--navy); stroke-width: 1.6; }
+.sig.fb { stroke: var(--burg); }
+.sig.dash { stroke: var(--muted); stroke-dasharray: 5 4; }
+.sig.off { stroke: var(--rule); stroke-dasharray: 2 4; }
+.playing .sig.live { stroke-dasharray: 7 5; animation: flow 0.9s linear infinite; }
+@keyframes flow { to { stroke-dashoffset: -12; } }
+.alab { font-size: 12px; font-style: italic; fill: var(--muted); }
+.ahead { fill: var(--navy); } .ahead.fb { fill: var(--burg); } .ahead.dash { fill: var(--muted); }
+
+/* ring */
+.ring .wedge { stroke: var(--panel); stroke-width: 2; }
+.ring .wl { font-size: 12px; text-anchor: middle; }
+.ring .wv { font-size: 10px; text-anchor: middle; }
+.ring .cur { fill: none; stroke: var(--burg); stroke-width: 2.6; }
+.ring .herd { fill: var(--navy); stroke: var(--panel); stroke-width: 1; }
+.ring .ctr { fill: var(--panel); stroke: var(--navy); stroke-width: 1.2; }
+.readout { font-size: 0.92rem; margin: 6px 2px 0; }
+.readout div { display: flex; justify-content: space-between; border-bottom: 1px dotted var(--rule); padding: 2px 0; }
+.readout span:last-child { font-variant-numeric: tabular-nums; }
+
+/* transport */
+.transport { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; margin-top: 14px;
+  padding: 10px 12px; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); }
+button, select, input { font-family: inherit; font-size: 0.95rem; color: var(--ink); }
+button { background: var(--panel); border: 1px solid var(--navy); color: var(--navy); padding: 5px 12px; border-radius: 2px; cursor: pointer; }
+button:hover { background: var(--rule2); }
+button.primary { background: var(--navy); color: var(--panel); }
+button.primary:hover { filter: brightness(1.15); }
+button:focus-visible, select:focus-visible, input:focus-visible, .blk:focus-visible { outline: 2px solid var(--ochre); outline-offset: 2px; }
+select, input[type=number] { background: var(--panel); border: 1px solid var(--rule); padding: 4px 6px; border-radius: 2px; }
+input[type=range] { accent-color: var(--navy); width: 100%; }
+.day { font-variant-numeric: tabular-nums; margin-left: auto; }
+.status { font-size: 0.92rem; color: var(--muted); }
+
+/* work area */
+.work { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 22px; margin-top: 18px; }
+.panel { background: var(--panel); border: 1px solid var(--rule); padding: 12px 14px; }
+fieldset { border: none; border-top: 1px solid var(--rule); margin: 10px 0 0; padding: 8px 0 0; }
+legend { color: var(--navy); font-weight: bold; padding: 0 6px 0 0; font-size: 0.95rem; }
+.f { margin: 8px 0; }
+.f label { display: flex; justify-content: space-between; gap: 8px; font-size: 0.9rem; }
+.f label span + span { font-variant-numeric: tabular-nums; color: var(--burg); }
+.g { display: block; font-size: 0.78rem; color: var(--muted); line-height: 1.35; margin-top: 1px; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.radio { display: flex; gap: 14px; font-size: 0.92rem; flex-wrap: wrap; }
+.note { font-size: 0.82rem; color: var(--burg); min-height: 1.1em; margin-top: 6px; }
+.scn { display: grid; gap: 6px; }
+.scn button { text-align: left; }
+
+.plot { background: var(--panel); border: 1px solid var(--rule); padding: 6px 8px 4px; margin-bottom: 12px; }
+.plot svg { display: block; width: 100%; }
+.plot .ptitle { font-size: 0.95rem; color: var(--navy); margin: 2px 4px 0; }
+.legend { font-size: 0.8rem; color: var(--muted); margin: 2px 4px 2px; display: flex; flex-wrap: wrap; gap: 4px 14px; }
+.legend > span { display: inline-flex; align-items: center; white-space: nowrap; }
+.sw { display: inline-block; width: 18px; height: 0; border-top: 2px solid; vertical-align: middle; margin-right: 4px; }
+.ax { font-size: 11px; fill: var(--muted); }
+.gridl { stroke: var(--rule2); stroke-width: 1; }
+.axl { stroke: var(--muted); stroke-width: 1; }
+
+/* info and tables */
+.two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 22px; }
+.info h3 { margin-top: 0; }
+table { border-collapse: collapse; width: 100%; font-size: 0.88rem; }
+th, td { border-bottom: 1px solid var(--rule2); padding: 5px 8px; text-align: left; vertical-align: top; }
+th { color: var(--navy); border-bottom: 1.5px solid var(--navy); font-weight: bold; }
+td.n { text-align: right; font-variant-numeric: tabular-nums; }
+.tw { overflow-x: auto; }
+.log { font-size: 0.86rem; max-height: 220px; overflow-y: auto; border-top: 1px solid var(--rule); }
+.log div { padding: 3px 0; border-bottom: 1px dotted var(--rule2); }
+.tag { display: inline-block; font-size: 0.78rem; padding: 0 5px; border: 1px solid; border-radius: 2px; margin-left: 4px; }
+.tag.grass { color: var(--forest); } .tag.gain { color: var(--burg); } .tag.cal { color: var(--navy); } .tag.max { color: var(--muted); }
+.tag.bad { color: var(--ochre); }
+.st-Placeholder { color: var(--ochre); } .st-Literature { color: var(--forest); } .st-Design { color: var(--navy); }
+footer { margin-top: 30px; padding-top: 10px; border-top: 2px solid var(--navy); font-size: 0.86rem; color: var(--muted); display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; }
+
+.tabs { display: flex; gap: 0; margin-bottom: 10px; border-bottom: 1.5px solid var(--navy); }
+.tabs button { border: 1px solid var(--rule); border-bottom: none; background: var(--paper); color: var(--muted); border-radius: 2px 2px 0 0; margin-right: 4px; }
+.tabs button[aria-selected="true"] { background: var(--navy); color: var(--panel); border-color: var(--navy); }
+.chk { display: flex; gap: 8px; align-items: flex-start; font-size: 0.9rem; margin: 6px 0; }
+.chk input { margin-top: 4px; }
+.outer.on rect.box { stroke: var(--forest); stroke-dasharray: none; fill: var(--panel); }
+.outer.on .t { fill: var(--forest); }
+.sig.dash.on { stroke: var(--forest); stroke-dasharray: 5 4; }
+.form { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px 10px; align-items: end; margin: 10px 0; }
+.form label { display: flex; flex-direction: column; font-size: 0.82rem; color: var(--muted); gap: 2px; }
+.form input, .form select { width: 100%; }
+textarea { width: 100%; font-family: "Courier New", Courier, monospace; font-size: 0.8rem; background: var(--panel); color: var(--ink); border: 1px solid var(--rule); padding: 8px; }
+.btnrow { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; align-items: end; }
+.form label.wide { grid-column: span 2; }
+.form label { display: flex; flex-direction: column; font-size: 0.86rem; gap: 2px; }
+.meas { display: flex; justify-content: space-between; gap: 8px; align-items: center; border-bottom: 1px dotted var(--rule2); padding: 3px 0; }
+.meas button { padding: 1px 8px; font-size: 0.82rem; }
+.report { font-size: 0.86rem; margin-top: 6px; }
+.report .err { color: var(--burg); } .report .warn { color: var(--ochre); } .report .ok { color: var(--forest); }
+.relse { display: grid; grid-template-columns: 1fr 80px; gap: 4px 8px; align-items: center; font-size: 0.86rem; }
+.relse input { width: 80px; }
+[hidden] { display: none !important; }
+
+/* levels */
+body[data-level="explore"] .lv-hide-explore, body:not([data-level="explore"]) .lv-explore,
+body:not([data-level="learn"]) .lv-learn, body:not([data-level="research"]) .lv-research { display: none !important; }
+.levels { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 8px 0 2px; }
+.levels button[aria-pressed="true"] { background: var(--navy); color: var(--panel); }
+.levels .lvnote { font-size: 0.86rem; color: var(--muted); margin-left: 6px; }
+#exLoop .bx rect { fill: var(--panel); stroke: var(--navy); stroke-width: 1.6; }
+#exLoop .bx .t { font-size: 17px; font-weight: bold; fill: var(--navy); }
+#exLoop .bx .v { font-size: 14px; }
+#exLoop .bx.fire rect { fill: var(--burg); stroke: var(--burg); }
+#exLoop .bx.fire text { fill: #FFFDF8; }
+#exLoop .ctr { font-size: 15px; font-style: italic; fill: var(--muted); }
+.exgrid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 22px; margin-top: 16px; }
+.gauge { margin: 10px 0 14px; }
+.gauge .lab { font-size: 0.95rem; display: flex; justify-content: space-between; gap: 8px; }
+.gbar { position: relative; height: 22px; background: var(--rule2); border: 1px solid var(--rule); margin-top: 4px; }
+.gbar .fill { position: absolute; left: 0; top: 0; bottom: 0; background: var(--forest); opacity: 0.85; }
+.gbar .tgt { position: absolute; top: -4px; bottom: -4px; width: 0; border-left: 2px dashed var(--ochre); }
+.gbar .est { position: absolute; top: -6px; bottom: -6px; width: 3px; background: var(--burg); }
+.gkey { font-size: 0.82rem; color: var(--muted); margin-top: 4px; }
+.exmsg { font-size: 0.95rem; max-height: 250px; overflow-y: auto; border-top: 1px solid var(--rule); }
+.exmsg div { padding: 5px 0; border-bottom: 1px dotted var(--rule2); }
+.exmsg .good { color: var(--forest); } .exmsg .bad { color: var(--burg); } .exmsg .warn { color: var(--ochre); }
+.report div { display: flex; justify-content: space-between; border-bottom: 1px dotted var(--rule); padding: 3px 0; font-size: 0.95rem; }
+.goal { background: var(--panel); border-left: 3px solid var(--navy); padding: 8px 12px; margin: 10px 0; font-size: 0.95rem; }
+@media (max-width: 980px) {
+  .hero, .work, .two, .exgrid { grid-template-columns: minmax(0, 1fr); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .playing .sig.live { animation: none; stroke-dasharray: none; }
+  #b-ctrl rect.box { transition: none; }
+}
+@media print {
+  .transport, .panel.controls, #compareBtn { display: none; }
+  body { background: #fff; }
+}
+</style>
+</head>
+<body>
+<main>
+<header>
+  <h1>Rotational grazing as a control loop: live simulation</h1>
+  <p class="lede lv-explore">Cattle graze one paddock at a time, then move to the next. Every morning someone checks the grass, decides, and acts. Can you keep the grass healthy and the cattle growing all season?</p>
+  <p class="lede lv-hide-explore" style="margin-bottom:0">The grazing control loop, running one day per tick. The controller sees only sensor readings and decides each morning whether the herd stays or moves. Run it on a simulated season, or on your own field records. Click any block for a plain explanation.</p>
+  <nav class="levels" aria-label="Level">
+    <span class="small muted">Level:</span>
+    <button type="button" data-level="explore" aria-pressed="false">Explore</button>
+    <button type="button" data-level="learn" aria-pressed="false">Learn</button>
+    <button type="button" data-level="research" aria-pressed="false">Research</button>
+    <span class="lvnote" id="lvNote"></span>
+  </nav>
+</header>
+
+<div class="hero">
+  <div class="fig lv-explore" id="exFig">
+    <svg id="exLoop" viewBox="0 0 520 330" role="img" aria-label="Simple grazing loop: grass and cattle, measure, decide, act">
+      <defs><marker id="exah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path class="ahead" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <path class="sig live" d="M242,75 L276,75" marker-end="url(#exah)"/>
+      <path class="sig live" d="M390,132 L390,196" marker-end="url(#exah)"/>
+      <path class="sig live" d="M278,255 L244,255" marker-end="url(#exah)"/>
+      <path class="sig live" d="M130,198 L130,134" marker-end="url(#exah)"/>
+      <text class="ctr" x="260" y="170" text-anchor="middle">every morning</text>
+      <g class="bx" id="exA"><rect x="20" y="20" width="222" height="112"/><text class="t" x="34" y="46">1. Grass and cattle</text><text class="v" id="exA1" x="34" y="72"></text><text class="v" id="exA2" x="34" y="94"></text><text class="v" id="exA3" x="34" y="116"></text></g>
+      <g class="bx" id="exB"><rect x="278" y="20" width="222" height="112"/><text class="t" x="292" y="46">2. Measure</text><text class="v" id="exB1" x="292" y="72"></text><text class="v" id="exB2" x="292" y="94"></text><text class="v" id="exB3" x="292" y="116"></text></g>
+      <g class="bx" id="exC"><rect x="278" y="198" width="222" height="112"/><text class="t" x="292" y="224">3. Decide</text><text class="v" id="exC1" x="292" y="250"></text><text class="v" id="exC2" x="292" y="272"></text><text class="v" id="exC3" x="292" y="294"></text></g>
+      <g class="bx" id="exD"><rect x="20" y="198" width="222" height="112"/><text class="t" x="34" y="224">4. Act</text><text class="v" id="exD1" x="34" y="250"></text><text class="v" id="exD2" x="34" y="272"></text><text class="v" id="exD3" x="34" y="294"></text></g>
+    </svg>
+    <p class="cap">Measure, decide, act, and measure again the next morning. Engineers call this a control loop. A home thermostat works the same way.</p>
+  </div>
+  <div class="fig dwrap lv-hide-explore">
+    <svg id="diagram" viewBox="0 0 800 432" role="img" aria-label="Live control loop diagram">
+      <defs>
+        <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path class="ahead" d="M0,0 L10,5 L0,10 z"/></marker>
+        <marker id="ahb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path class="ahead fb" d="M0,0 L10,5 L0,10 z"/></marker>
+        <marker id="ahd" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path class="ahead dash" d="M0,0 L10,5 L0,10 z"/></marker>
+      </defs>
+      <!-- arrows -->
+      <path id="a-r" class="sig live" d="M176,134 L212,134" marker-end="url(#ah)"/>
+      <text class="alab" x="194" y="126" text-anchor="middle">r</text>
+      <path id="a-dec" class="sig live" d="M384,134 L418,134" marker-end="url(#ah)"/>
+      <path id="a-u" class="sig live" d="M530,134 L564,134" marker-end="url(#ah)"/>
+      <text class="alab" x="547" y="126" text-anchor="middle">u(k)</text>
+      <path id="a-d" class="sig live" d="M675,56 L675,76" marker-end="url(#ah)"/>
+      <text class="alab" x="684" y="71">d(k)</text>
+      <path id="a-x" class="sig live" d="M675,190 L675,224" marker-end="url(#ah)"/>
+      <text class="alab" x="684" y="212">x(k)</text>
+      <path id="a-y" class="sig live" d="M566,282 L532,282" marker-end="url(#ah)"/>
+      <text class="alab" x="549" y="274" text-anchor="middle">y(k)</text>
+      <path id="a-fb" class="sig fb live" d="M300,224 L300,192" marker-end="url(#ahb)"/>
+      <text id="a-fb-l" class="alab" x="308" y="212">x&#770;(k), P(k)</text>
+      <path id="a-o1" class="sig dash" d="M372,358 L372,340" marker-end="url(#ahd)"/>
+      <text class="alab" x="380" y="354">&#952;</text>
+      <path id="a-o2" class="sig dash" d="M96,358 L96,192" marker-end="url(#ahd)"/>
+      <text class="alab" x="104" y="300">retune</text>
+      <text class="alab" x="400" y="210" text-anchor="middle">daily loop</text>
+
+      <!-- disturbances -->
+      <g id="b-dist" class="blk" tabindex="0" role="button" aria-label="Disturbances">
+        <rect class="box" x="566" y="8" width="218" height="48"/>
+        <text class="t" x="576" y="27">Disturbances d(k)</text>
+        <text id="v-dist" class="v" x="576" y="46">weather</text>
+      </g>
+      <!-- setpoints -->
+      <g id="b-set" class="blk" tabindex="0" role="button" aria-label="Setpoints">
+        <rect class="box" x="16" y="78" width="160" height="112"/>
+        <text class="t" x="26" y="98">Setpoints r</text>
+        <text id="v-set1" class="v" x="26" y="118">B* = 1500 kg/ha</text>
+        <text id="v-set2" class="m" x="26" y="134">(1338 lb/ac)</text>
+        <text id="v-set3" class="v" x="26" y="154">&#948; = 30 %</text>
+        <text id="v-set4" class="v" x="26" y="174">d: 2 to 7 d, n = 5</text>
+      </g>
+      <!-- controller -->
+      <g id="b-ctrl" class="blk" tabindex="0" role="button" aria-label="Controller">
+        <rect class="box" x="214" y="78" width="170" height="112"/>
+        <text class="t" x="224" y="98">Controller</text>
+        <text id="v-ctrl1" class="v" x="224" y="118">Dual trigger</text>
+        <text id="v-ctrl2" class="v" x="224" y="138">closed loop</text>
+        <text id="v-ctrl3" class="v" x="224" y="160">Day 0: waiting</text>
+        <text id="v-ctrl4" class="m" x="224" y="178">grass no, gain no</text>
+      </g>
+      <!-- actuator -->
+      <g id="b-act" class="blk" tabindex="0" role="button" aria-label="Actuator">
+        <rect class="box" x="420" y="94" width="110" height="80"/>
+        <text class="t" x="430" y="114">Actuator</text>
+        <text id="v-act1" class="v" x="430" y="136">u = stay</text>
+        <text id="v-act2" class="m" x="430" y="156">gate closed</text>
+      </g>
+      <!-- plant -->
+      <g id="b-plant" class="blk" tabindex="0" role="button" aria-label="Plant: paddock and herd">
+        <rect class="box" x="566" y="78" width="218" height="112"/>
+        <text class="t" x="576" y="98">Plant: paddock and herd</text>
+        <text id="v-pl1" class="v" x="576" y="118">Paddock 1, day 0 of stay</text>
+        <text id="v-pl2" class="v" x="576" y="138">B = 0 kg/ha (true)</text>
+        <text id="v-pl3" class="v" x="576" y="158">W = 0 kg (true, herd mean)</text>
+        <text id="v-pl4" class="m" x="576" y="178">intake 0 kg DM/head/d</text>
+      </g>
+      <!-- sensors -->
+      <g id="b-sens" class="blk" tabindex="0" role="button" aria-label="Sensors">
+        <rect class="box" x="566" y="226" width="218" height="112"/>
+        <text class="t" x="576" y="246">Sensors, with noise v</text>
+        <text id="v-s1" class="v" x="576" y="268">y&#8321; map: none today</text>
+        <text id="v-s2" class="v" x="576" y="290">y&#8322; camera: 0 kg</text>
+        <text id="v-s3" class="m" x="576" y="312">y&#8323; tags: logged, not used in v1</text>
+        <text id="v-s4" class="m" x="576" y="330">y&#8322; = W + b + v&#8322;</text>
+      </g>
+      <!-- estimator -->
+      <g id="b-est" class="blk" tabindex="0" role="button" aria-label="Estimator">
+        <rect class="box" x="214" y="226" width="318" height="112"/>
+        <text class="t" x="224" y="246">Estimator x&#770;(k), P(k)</text>
+        <text id="v-e1" class="v" x="224" y="268">B&#770; = 0 &#177; 0 kg/ha</text>
+        <text id="v-e2" class="v" x="224" y="290">&#285; = n/a kg/d over n = 5 d</text>
+        <text id="v-e3" class="v" x="224" y="310">move if &#285; &#8804; 0 kg/d</text>
+        <text id="v-e4" class="m" x="224" y="328">regrowth r&#770; = 0 kg/ha/d</text>
+      </g>
+      <!-- outer loop, inactive -->
+      <g id="b-outer" class="blk outer" tabindex="0" role="button" aria-label="Outer calibration loop, inactive">
+        <rect class="box" x="16" y="360" width="768" height="64"/>
+        <text class="t" x="28" y="380">Outer loop, once per rotation cycle: year 2 of project (inactive in v1)</text>
+        <text id="v-o1" class="m" x="28" y="400">Scale reference: none yet. n-alkane: not simulated in v1.</text>
+        <text class="m" x="28" y="416">Calibration would compare references with estimates, e(k), and update &#952; (utilization, regrowth, forage-to-gain constants).</text>
+      </g>
+    </svg>
+    <p class="cap"><b>Control loop, live.</b> Solid lines are the daily loop; the burgundy line is the feedback path. Dashed lines are the slower calibration loop, shown but not active in this version.</p>
+  </div>
+
+  <div class="fig ring">
+    <svg id="ring" viewBox="0 0 320 320" role="img" aria-label="Ten-paddock rotation ring"></svg>
+    <p class="cap" id="ringCap"></p>
+    <div class="readout lv-hide-explore" id="ringRead"></div>
+  </div>
+</div>
+
+<div class="transport" id="transport">
+  <button id="playBtn" class="primary" type="button">Play</button>
+  <button id="stepBtn" type="button">Step one day</button>
+  <button id="resetBtn" type="button">Reset</button>
+  <label class="small">Speed
+    <select id="speed">
+      <option value="1">1 day per second</option><option value="2">2 days per second</option>
+      <option value="5" selected>5 days per second</option><option value="10">10 days per second</option><option value="30">30 days per second</option>
+    </select></label>
+  <span class="status" id="status">Ready.</span>
+  <span class="day" id="dayRead">Day 0 of 214</span>
+</div>
+
+<section class="lv-explore" id="exSec">
+  <div class="exgrid">
+    <div class="panel">
+      <h2>Your choices</h2>
+      <div class="radio" role="radiogroup" aria-label="How to decide when to move" style="flex-direction:column;gap:6px">
+        <label><input type="radio" name="exRule" value="grass"> Move when the grass gets short</label>
+        <label><input type="radio" name="exRule" value="calendar"> Move every 4 days, like a calendar</label>
+      </div>
+      <div class="f" style="margin-top:12px"><label for="exFloor"><span>Always leave at least</span><span id="o-exFloor"></span></label>
+        <input type="range" id="exFloor" min="900" max="1750" step="50">
+        <span class="g">Grass left behind regrows faster. The usual guideline for tall fescue is 1,200 to 1,500 lb per acre.</span></div>
+      <div class="f"><label for="exQuality"><span>How good is the grass sensor (a drone)?</span></label>
+        <select id="exQuality"><option value="good">Good</option><option value="fair">Fair</option><option value="poor">Poor</option></select></div>
+      <h3>Challenges</h3>
+      <div class="scn">
+        <button type="button" data-ex="healthy">1. Keep the grass healthy all season</button>
+        <button type="button" data-ex="dry">2. Get through a dry summer</button>
+        <button type="button" data-ex="sensor">3. See what a poor sensor does</button>
+      </div>
+      <div class="goal" id="exGoal">Press Play to start. Watch the four boxes go around each morning.</div>
+    </div>
+    <div class="panel">
+      <h2>How it is going</h2>
+      <div class="gauge"><div class="lab"><span>Grass in this paddock</span><span id="exGrassTxt"></span></div>
+        <div class="gbar"><div class="fill" id="exFill"></div><div class="tgt" id="exTgt"></div><div class="est" id="exEst"></div></div>
+        <div class="gkey">Green bar: real grass, which only the simulation knows. Red mark: what the sensor thinks. Dashed line: your target. The grass is checked once each morning, so the herd may graze a little below the target before it moves; up to 10 percent below still counts as good.</div></div>
+      <div class="gauge"><div class="lab"><span>Average animal</span><span id="exWtTxt"></span></div></div>
+      <h3>Season report</h3>
+      <div class="report" id="exReport"></div>
+      <h3>What happened</h3>
+      <div class="exmsg" id="exMsg"></div>
+    </div>
+  </div>
+</section>
+
+<div class="work lv-hide-explore">
+  <div class="panel controls">
+    <div class="tabs lv-research" role="tablist" aria-label="Data source">
+      <button type="button" role="tab" data-src="sim" aria-selected="true">Simulation</button>
+      <button type="button" role="tab" data-src="field" aria-selected="false">Field data</button>
+    </div>
+    <div class="scn" data-only="sim">
+      <button type="button" data-scn="normal">Normal season</button>
+      <button type="button" data-scn="dry">Dry spell</button>
+      <button type="button" data-scn="noisy">High sensor noise</button>
+    </div>
+    <div class="goal lv-learn small" data-only="sim"><b>Try this.</b> (1) Run the comparison below. Which rule protects the grass better? (2) Load High sensor noise, then raise d&#8344;&#7522;&#8345; from 1 to 3. Why do wrong moves drop? (3) Watch Plot 2b. Why is the gain band so wide? (4) Run a whole season. Why do stays get shorter in summer?</div>
+    <fieldset>
+      <legend>Controller</legend>
+      <div class="radio" role="radiogroup" aria-label="Controller mode">
+        <label><input type="radio" name="mode" value="dual"> Dual trigger (closed loop)</label>
+        <label><input type="radio" name="mode" value="calendar"> Calendar (open loop)</label>
+      </div>
+      <div class="f" id="calRow"><label for="calendarDays"><span>Calendar stay, days</span><span id="o-calendarDays"></span></label>
+        <input type="range" id="calendarDays" min="1" max="10" step="1"><span class="g">Handover scenario: 4-day stays, 36-day rest.</span></div>
+    </fieldset>
+    <fieldset>
+      <legend>Setpoints (apply from the next morning)</legend>
+      <div class="f"><label for="floor"><span>Residual floor B*</span><span id="o-floor"></span></label>
+        <input type="range" id="floor" min="1000" max="2000" step="50">
+        <span class="g">Allowed 1000 to 2000 kg DM/ha. Fescue guideline 1200 to 1500 lb DM/ac (1345 to 1681 kg/ha); grass-clover 1500 to 1800 lb/ac.</span></div>
+      <div class="f"><label for="delta"><span>Gain drop &#948;</span><span id="o-delta"></span></label>
+        <input type="range" id="delta" min="10" max="40" step="5">
+        <span class="g">Allowed 10 to 40 percent. Calculator guideline 25 to 40 percent.</span></div>
+      <div class="row2">
+        <div class="f"><label for="dmin"><span>d&#8344;&#7522;&#8345;</span><span id="o-dmin"></span></label>
+          <input type="range" id="dmin" min="1" max="3" step="1"><span class="g">1 to 3 days</span></div>
+        <div class="f"><label for="dmax"><span>d&#8344;&#8336;&#8339;</span><span id="o-dmax"></span></label>
+          <input type="range" id="dmax" min="3" max="10" step="1"><span class="g">3 to 10 days</span></div>
+      </div>
+      <div class="f"><label for="window"><span>Gain window n</span><span id="o-window"></span></label>
+        <input type="range" id="window" min="3" max="5" step="1"><span class="g">3 to 5 days. Longer is steadier but later.</span></div>
+      <div class="note" id="clampNote" role="status"></div>
+    </fieldset>
+    <fieldset class="lv-research">
+      <legend>Estimator options</legend>
+      <label class="chk"><input type="checkbox" id="calibrate"><span>Outer loop on: once per 40-day cycle, rescale each sensor by its mean ratio to the clip means so far</span></label>
+      <label class="chk"><input type="checkbox" id="useClips"><span>Use clips in the estimator (off keeps clips as an independent reference)</span></label>
+    </fieldset>
+    <fieldset data-only="sim" class="lv-research">
+      <legend>Sensor errors measured in the field</legend>
+      <div id="measStatus" class="small"></div>
+    </fieldset>
+    <fieldset data-only="field">
+      <legend>Herd and paddocks</legend>
+      <div class="row2">
+        <div class="f"><label for="fHead"><span>Head</span></label><input type="number" id="fHead" min="1" max="500" step="1"></div>
+        <div class="f"><label for="fPaddocks"><span>Paddocks</span></label><input type="number" id="fPaddocks" min="2" max="40" step="1"></div>
+        <div class="f"><label for="fAreaAc"><span>Paddock area, ac</span></label><input type="number" id="fAreaAc" min="0.05" max="100" step="0.05"></div>
+        <div class="f"><label for="fInitialBW"><span>Start weight, kg</span></label><input type="number" id="fInitialBW" min="50" max="900" step="5"></div>
+      </div>
+      <div class="f"><label for="fRegrowthPrior"><span>Regrowth before data, kg DM/ha/d</span></label><input type="number" id="fRegrowthPrior" min="0" max="150" step="1">
+        <span class="g">Used until exit and turn-in readings give a measured rate. 45 kg/ha/d is 40 lb/ac/d.</span></div>
+    </fieldset>
+    <fieldset data-only="field">
+      <legend>Sensor error, relative SE</legend>
+      <div class="relse" id="relseBox"></div>
+      <span class="g">Error of one paddock-mean reading, as a fraction. Replace the defaults with your validation results. Clip rows with 2 or more quadrats use their own SD.</span>
+    </fieldset>
+    <fieldset data-only="sim">
+      <legend>Season and sensors (restart the run)</legend>
+      <div class="f"><label for="bioSensor"><span>Biomass sensor the controller uses</span></label>
+        <select id="bioSensor"><option value="map">UAV or rover map</option><option value="plate">Plate meter</option><option value="visual">Visual estimate</option></select>
+        <span class="g">Maps and plate: turn-in, day 2, exit. Visual: every morning. Clips (12 quadrats) at every turn-in and exit, as the reference.</span></div>
+      <div class="f"><label for="weather"><span>Weather</span></label>
+        <select id="weather"><option value="average">Average</option><option value="dry">Dry: 60 percent of rain, +1 &#176;C</option><option value="wet">Wet: 140 percent of rain</option><option value="record">Historical record (one year)</option></select></div>
+      <div class="f" id="yearRow"><label for="recordYear"><span>Record year</span></label><select id="recordYear"></select>
+        <span class="g" id="yearNote">Load a weather record under Historical weather.</span></div>
+      <div class="f"><label for="noiseMap"><span>Biomass sensor error (y&#8321;)</span></label>
+        <select id="noiseMap"><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select></div>
+      <div class="f"><label for="noiseCamera"><span>Camera error (v&#8322;)</span></label>
+        <select id="noiseCamera"><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select></div>
+      <div class="f"><label for="noiseFill"><span>Gut fill swing (b)</span></label>
+        <select id="noiseFill"><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select>
+        <span class="g">Medium is the grazing-sim placeholder. Low is one quarter of it, high is twice it.</span></div>
+      <div class="f"><label for="seed"><span>Random seed</span></label><input type="number" id="seed" min="1" step="1"></div>
+    </fieldset>
+  </div>
+
+  <div>
+    <div class="plot"><div class="ptitle">Plot 1. Standing biomass in the grazed paddock, kg DM/ha</div>
+      <div class="legend"><span data-only="sim"><i class="sw" style="border-color:var(--navy)"></i>true (hidden from controller)</span><span><i class="sw" style="border-color:var(--burg);border-top-style:dashed"></i>estimate B&#770; with 95 percent band</span><span><svg width="12" height="10" style="margin-right:4px"><rect x="2" y="1" width="8" height="8" fill="var(--ochre)"/></svg>map</span><span><svg width="12" height="10" style="margin-right:4px"><rect x="2" y="1" width="8" height="8" fill="var(--forest)"/></svg>plate</span><span><svg width="12" height="10" style="margin-right:4px"><rect x="2" y="1" width="8" height="8" fill="var(--muted)"/></svg>visual (open square: exit reading)</span><span><svg width="12" height="12" style="margin-right:4px"><line x1="6" y1="0" x2="6" y2="12" stroke="var(--navy)"/><circle cx="6" cy="6" r="3" fill="var(--navy)"/></svg>clip mean, 95 percent CI (reference)</span><span><i class="sw" style="border-color:var(--forest);border-top-style:dashed"></i>floor B*</span></div>
+      <svg id="p1" height="230"></svg></div>
+    <div class="plot"><div class="ptitle">Plot 2a. Herd-mean weight, kg</div>
+      <div class="legend"><span><svg width="12" height="10" style="vertical-align:middle;margin-right:4px"><circle cx="6" cy="5" r="3" fill="none" stroke="var(--navy)" stroke-width="1.2"/></svg>camera, daily herd mean (seen by the controller)</span><span data-only="sim"><i class="sw" style="border-color:var(--muted)"></i>true herd mean</span><span><svg width="12" height="10" style="vertical-align:middle;margin-right:4px"><rect x="2" y="1" width="8" height="8" fill="var(--ochre)"/></svg>scale reference (not used in decisions)</span></div>
+      <svg id="p2" height="170"></svg></div>
+    <div class="plot"><div class="ptitle">Plot 2b. Rolling gain and the &#948; threshold, kg/day</div>
+      <div class="legend"><span><i class="sw" style="border-color:var(--burg)"></i>estimate &#285; with 95 percent band</span><span data-only="sim"><i class="sw" style="border-color:var(--muted);border-top-style:dashed"></i>true rolling gain</span><span><i class="sw" style="border-color:var(--ochre)"></i>threshold (1 - &#948;) &#285;&#8344;&#8336;&#8339;</span></div>
+      <svg id="p3" height="170"></svg></div>
+    <div class="radio small"><label><input type="radio" name="view" value="all"> Whole season</label><label><input type="radio" name="view" value="60"> Last 60 days</label></div>
+  </div>
+</div>
+
+<section class="two rule-top lv-hide-explore">
+  <div class="info" id="info" aria-live="polite"></div>
+  <div>
+    <h2>Move log</h2>
+    <p class="small muted" id="logSum">No moves yet.</p>
+    <div class="log" id="log"></div>
+  </div>
+</section>
+
+<section class="rule-top" id="fieldSec" data-only="field">
+  <h2>Field records</h2>
+  <p class="small">Every reading is one row: date, paddock, type, value. Enter rows below, paste a CSV, or load a file. The same file format can come straight from the lab's processing pipelines. Press Apply to replay the records through the loop. The controller then gives its recommendation for each morning, next to what was actually done.</p>
+  <div class="form" id="addForm">
+    <label>Date<input type="date" id="rDate"></label>
+    <label>Paddock<input type="number" id="rPad" min="1" step="1" value="1"></label>
+    <label>Type<select id="rType"><option value="clip">clip quadrat</option><option value="uav">uav</option><option value="rover">rover</option><option value="plate">plate</option><option value="visual">visual</option><option value="camera">camera</option><option value="scale">scale</option><option value="move">move (herd enters)</option><option value="temp">temp</option></select></label>
+    <label>Value<input type="number" id="rVal" step="any"></label>
+    <label>Unit<select id="rUnit"></select></label>
+    <label>Animal ID<input type="text" id="rAnimal" placeholder="optional"></label>
+    <label>Role<select id="rRole"><option value="">auto</option><option value="pre">pre (turn-in)</option><option value="mid">mid</option><option value="post">post (exit)</option><option value="rest">rest</option></select></label>
+    <button type="button" id="addRow">Add record</button>
+  </div>
+  <h3>Clip quadrats for one paddock</h3>
+  <div class="form" id="clipForm">
+    <label>Date<input type="date" id="cDate"></label>
+    <label>Paddock<input type="number" id="cPad" min="1" step="1" value="1"></label>
+    <label>When<select id="cRole"><option value="pre">before grazing (turn-in)</option><option value="post">after grazing (exit)</option><option value="mid">mid-stay</option><option value="rest">rest paddock</option></select></label>
+    <label>Frame area, m&#178;<input type="number" id="cArea" min="0.01" max="4" step="0.01" value="0.25"></label>
+    <label class="wide">Dry weight per quadrat, g (spaces or commas)<input type="text" id="cVals" placeholder="e.g. 61.2 55.0 70.4 48.9 ..."></label>
+    <button type="button" id="addClips">Add quadrats</button>
+  </div>
+  <p class="small muted">Each quadrat becomes one clip row. Dry grams over the frame area convert to kg DM/ha: g / m&#178; x 10. The mean, its standard error, and the 95 percent interval are computed from the rows.</p>
+  <div class="btnrow">
+    <label class="small">Load from a URL <input type="url" id="urlIn" placeholder="data/field-records.csv" size="34"></label>
+    <button type="button" id="urlBtn">Load</button>
+  </div>
+  <p class="small muted">For a pipeline feed: the lab's processing scripts write a CSV in this format to the repository, for example data/field-records.csv, and the page on GitHub Pages loads it by that path. Loading from other sites works only if they allow it. It does not work inside the claude.ai preview.</p>
+  <div class="btnrow">
+    <label class="small">Load a CSV file <input type="file" id="fileIn" accept=".csv,text/csv,text/plain"></label>
+    <button type="button" id="exampleBtn">Load example (60 simulated days)</button>
+    <button type="button" id="copyBtn">Copy CSV</button>
+    <button type="button" id="dlBtn">Download CSV</button>
+    <button type="button" id="clearBtn">Clear all</button>
+  </div>
+  <textarea id="csv" rows="12" spellcheck="false" aria-label="Field records as CSV"></textarea>
+  <div class="btnrow"><button type="button" id="applyBtn" class="primary">Apply records</button></div>
+  <div class="report" id="report" role="status"></div>
+  <h3>File format</h3>
+  <div class="tw"><table>
+    <thead><tr><th>Column</th><th>Meaning</th></tr></thead><tbody>
+    <tr><td>date</td><td>YYYY-MM-DD, or a day number. Use one style for the whole file.</td></tr>
+    <tr><td>paddock</td><td>1, 2, 3 ... (P3 also works). Needed for biomass rows and move rows.</td></tr>
+    <tr><td>type</td><td>clip, uav, rover, map (either platform), plate, visual (biomass); camera, scale (weight); move (the herd enters this paddock that day); temp (daily mean air temperature, optional)</td></tr>
+    <tr><td>value</td><td>Biomass as paddock mean, or one clip quadrat per row. Weight per animal or herd mean. Empty for move rows.</td></tr>
+    <tr><td>unit</td><td>kg/ha or lb/ac; kg or lb; C or F. Blank means kg/ha, kg, C.</td></tr>
+    <tr><td>animal</td><td>Animal ID for camera and scale rows. Blank means the value is a herd mean.</td></tr>
+    <tr><td>n, sd</td><td>Optional. For a clip row that is already a mean: number of quadrats and their SD.</td></tr>
+    <tr><td>role</td><td>Optional: pre, mid, post, rest. Blank is inferred from the move rows: on a move day, readings on the paddock left are post and on the paddock entered are pre.</td></tr>
+    <tr><td>note</td><td>Free text, ignored.</td></tr>
+    </tbody></table></div>
+  <p class="small muted">The first day needs a move row that says where the herd starts. Rows starting with # are comments. Records are kept in this browser only.</p>
+</section>
+
+<section class="rule-top lv-research" data-only="sim" id="wxSec">
+  <h2>Historical weather</h2>
+  <p class="small">Replace the placeholder weather with a real daily record. Each year from April 1 to October 31 becomes one season. Replay one year under Season and sensors, or run every year below.</p>
+  <div class="tw"><table>
+    <thead><tr><th>Station (GHCN-Daily ID)</th><th>Location</th><th>Record</th></tr></thead><tbody>
+    <tr><td>Clemson University (USC00381770)</td><td>34.660, -82.823; 244 m; about 4 km from Pendleton</td><td>daily from 1896</td></tr>
+    <tr><td>Anderson Regional Airport (USW00093846)</td><td>34.498, -82.709; 234 m</td><td>daily from 1948</td></tr>
+    <tr><td>Clemson-Oconee County Airport (USW00053850)</td><td>34.672, -82.881; 271 m</td><td>check coverage before use</td></tr>
+    </tbody></table></div>
+  <p class="small">Download: NOAA NCEI Climate Data Online, Daily Summaries. Search the station ID, choose the years (for example 1995 to 2025), CSV output, and include TMAX, TMIN, and PRCP. Metric or standard units both work. The raw per-station GHCN files (tenths of a degree and of a millimeter) also work. Any lab or farm station works as a plain CSV with columns date, tmax, tmin, rain in C and mm.</p>
+  <div class="btnrow">
+    <label class="small">Load a weather CSV <input type="file" id="wxFile" accept=".csv,text/csv,text/plain"></label>
+    <label class="small">Units <select id="wxUnits"><option value="auto">detect</option><option value="metric">C and mm</option><option value="standard">F and inches</option><option value="tenths">tenths (raw GHCN)</option></select></label>
+    <button type="button" id="wxClear">Remove record</button>
+  </div>
+  <div class="report" id="wxReport" role="status"></div>
+  <div class="tw" id="wxNormals"></div>
+  <div class="tw" id="wxYears"></div>
+  <h3>Run every year</h3>
+  <p class="small">Runs the dual trigger and a calendar with the same mean stay on every usable year, with the current settings. The spread across years is the range of outcomes this rule would have had.</p>
+  <button type="button" id="wxRunAll" class="primary">Run all years</button>
+  <div class="tw" id="wxAll" style="margin-top:12px"></div>
+</section>
+
+<section class="rule-top lv-hide-explore" data-only="sim">
+  <h2>Compare: calendar versus dual trigger</h2>
+  <p class="small">Runs the full season twice with the current settings and seed. The dual trigger runs first. The calendar then moves on a fixed schedule with the same mean stay, so the comparison is fair. Scores use the true state, which the controllers never see.</p>
+  <button id="compareBtn" type="button" class="primary">Run the comparison</button>
+  <div class="tw" id="compareOut" style="margin-top:12px"></div>
+  <h2 style="margin-top:22px">Compare biomass sensors</h2>
+  <p class="small">Runs the dual trigger three times on the same seed, once with each biomass sensor. Weights, weather, and settings are identical.</p>
+  <button id="sensorBtn" type="button" class="primary">Compare the sensors</button>
+  <div class="tw" id="sensorOut" style="margin-top:12px"></div>
+  <h2 style="margin-top:22px">Export this season as field records</h2>
+  <p class="small">Writes every reading of the current simulated season in the field-record format and opens it under Field data. Replaying it gives the same decisions. This is how the tool is checked.</p>
+  <button id="exportSimBtn" type="button">Export to field records</button>
+</section>
+<section class="rule-top" data-only="field">
+  <h2>Rule versus what was done</h2>
+  <div class="tw" id="fieldSum"><p class="small muted">Apply records and play them through to see the summary.</p></div>
+  <h2 style="margin-top:22px">Sensor error against clips</h2>
+  <p class="small">Each sensor reading is paired with the clip quadrats taken on the same paddock and day. Error is relative to the clip mean. Scatter is shown twice: as measured, and with the clip mean's own sampling error removed, which is the sensor's error alone. Use in simulator replaces that sensor's placeholder error model with the measured bias and scatter.</p>
+  <div class="tw" id="errOut"><p class="small muted">Apply records that include clips and at least one sensor on the same paddock and day.</p></div>
+</section>
+
+<section class="rule-top lv-research">
+  <h2>Parameters</h2>
+  <p class="small">Every value comes from grazing-sim v0.1.0 (config/default.json and the parameter ledger) unless marked otherwise. Placeholders must be replaced with lab and regional values before any number here is quoted.</p>
+  <div class="tw"><table id="ptable"><thead><tr><th>Parameter</th><th>Value</th><th>Source</th><th>Status</th></tr></thead><tbody></tbody></table></div>
+</section>
+
+<footer>
+  <span><b>Design-stage tool. Not field results.</b></span>
+  <span id="foot">grazing-control-sim v1.0.0, seed 42</span>
+  <span>Dr. A. B. Koc, Agricultural and Biosystems Engineering, Clemson University. Code MIT license.</span>
+</footer>
+</main>
+
+<noscript><p style="padding:20px">This simulation needs JavaScript.</p></noscript>
+<script>
+/*ENGINE*/
+</script>
+<script>
+(function () {
+"use strict";
+var G = window.GCS, KEY = "grazing-control-sim-v1", FKEY = "grazing-control-sim-v1-field";
+var LB = 0.8922; // 1 kg/ha = 0.8922 lb/ac
+var $ = function (id) { return document.getElementById(id); };
+function fmt(v, d) { return (v === null || v === undefined || !isFinite(v)) ? "n/a" : Number(v).toFixed(d); }
+function setText(id, t) { var e = $(id); if (e) e.textContent = t; }
+function esc(t) { return String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+
+// ---------- persistence ----------
+var settings = G.sanitize(null), view = "all", fieldText = "";
+try { var saved = JSON.parse(localStorage.getItem(KEY) || "null"); if (saved) { settings = G.sanitize(saved.settings); view = saved.view === "60" ? "60" : "all"; } } catch (e) {}
+try { fieldText = localStorage.getItem(FKEY) || ""; } catch (e) {}
+function save() {
+  if (typeof level !== "undefined" && level === "explore") return; try { localStorage.setItem(KEY, JSON.stringify({ settings: settings, view: view })); } catch (e) {} }
+function saveField() { try { localStorage.setItem(FKEY, fieldText); } catch (e) { report([["warn", "Records are too large to keep in this browser; they stay until the page is closed."]]); } }
+
+var sim = null, parsed = null, playing = false, acc = 0, lastT = 0, flashTimer = null, fireInfo = null;
+function isField() { return settings.source === "field"; }
+
+// ---------- guide text ----------
+var INFO = {
+  about: ["How to read this page", [
+    "A home thermostat is a control loop. It measures the room, compares the reading with the set temperature, and switches the furnace on or off. Then it measures again.",
+    "This page treats rotational grazing the same way. Each morning the controller reads the estimates of grass and gain, compares them with the setpoints, and keeps or moves the herd.",
+    "A calendar rotation is an open loop: the decision ignores the measurements. The dual trigger is a closed loop.",
+    "Two data sources feed the same loop. Simulation makes a season with a known true state, so every decision can be scored. Field data replays your own records: clips, UAV or rover estimates, plate meter, visual estimates, camera and scale weights, and the days the herd moved."]],
+  "b-set": ["Setpoints: what we want", [
+    "The setpoints are fixed before grazing starts. The residual floor B* is the least grass we leave in a paddock so it regrows well. The gain-drop fraction \u03b4 says how much slower the cattle may gain before we call it a problem. The stay limits are the shortest and longest time the herd may stay in one paddock.",
+    "They can be changed during a run. The controller uses the new values from the next morning."]],
+  "b-ctrl": ["Controller: who decides", [
+    "The controller is the move rule. Each morning it asks two questions. Has the grass dropped to the floor? Has the herd's gain slowed too much? If either answer is yes, the herd moves. This is the dual trigger.",
+    "The controller only sees estimates, never the true values. When it fires, the block flashes and names the trigger: grass, gain, or the maximum stay.",
+    "On field data the controller does not move the herd. It gives its recommendation for that morning, and the log sets it next to what was done.",
+    "Rule: move if B\u0302(k) \u2264 B* or \u011d(k) \u2264 (1 - \u03b4) \u011d\u2098\u2090\u2093(k), subject to d\u2098\u1d62\u2099 \u2264 d \u2264 d\u2098\u2090\u2093. Here \u011d\u2098\u2090\u2093 is the best rolling gain since turn-in."]],
+  "b-act": ["Actuator: who acts", [
+    "The actuator carries out the decision. Someone opens a gate or moves a polywire, and the herd walks to the next paddock. The signal u(k) is the decision on day k: stay or move.",
+    "On field data the actuator shows what was actually done, from the move rows."]],
+  "b-plant": ["Plant: what is being controlled", [
+    "In control language the plant is the system being controlled. It does not mean a plant in the botanical sense. Here the plant is the paddock and the herd together.",
+    "The grass available, called allowance, sets how much the cattle can eat. What they eat, called removal, lowers the grass. Growth adds grass back. Trampling takes some away.",
+    "B(k+1) = B(k) + G(k) - I(k) - L(k) and W(k+1) = W(k) + f(I(k), q(k)) + w(k). In a simulation this block shows the truth. In the field nobody knows it; the clips are the closest reference."]],
+  "b-dist": ["Disturbances: what we cannot control", [
+    "Disturbances are outside influences: rain, heat, regrowth rate, and how full the animals are when weighed. A good control loop absorbs them without constant attention.",
+    "Heat above 28 \u00b0C cuts intake in every paddock. The gain trigger cannot tell a heat dip from a forage dip. On field data, temperature rows are optional; without them the estimator assumes no heat effect."]],
+  "b-sens": ["Sensors: how we see", [
+    "Biomass comes from one of several sensors: UAV or rover maps (Objective 1), a plate meter, or a visual estimate. Each has its own error. Maps and the plate meter are read at turn-in, on day 2, and at exit. A visual estimate can be made every morning.",
+    "Clipped quadrats are the reference. Twelve random quadrats at turn-in and exit give a paddock mean with a known standard error.",
+    "A camera at the water point estimates each animal's weight every day (Objective 2). The camera reading includes gut fill, b, which is larger than a day's gain. Ear tags are logged but not used in this version."]],
+  "b-est": ["Estimator: turning rough data into a best guess", [
+    "The estimator turns scattered readings into the best current guess and its uncertainty. Between readings it predicts the grass from the herd's expected intake and the regrowth rate. Each reading pulls the guess toward it, weighted by that sensor's error.",
+    "Several sensors can feed it at once. A precise reading moves the estimate more than a rough one.",
+    "Regrowth is learned from each paddock's exit reading and its next turn-in reading. Gain is the least-squares slope of the herd-mean camera weight over the last n days."]],
+  "b-outer": ["The slower loop: learning from each cycle", [
+    "This loop runs once per rotation cycle. References check the daily sensors. Clips check the biomass sensor. The scale checks the camera. The gap between reference and sensor is the error e(k).",
+    "When the outer loop is on, each 40-day cycle updates one factor per biomass sensor: its mean ratio to the clip means so far. Later readings are divided by that factor. This removes a steady bias, such as a plate meter's generic calibration. It cannot remove day-to-day scatter.",
+    "The full calibration of \u03b8 (utilization, regrowth, forage-to-gain constants) and the n-alkane reference belong to year 2 of the project and are not in this version."]],
+  normal: ["Scenario: normal season", [
+    "Average weather, medium sensor error, map sensor, floor 1500 kg/ha, \u03b4 30 percent, stays of 2 to 7 days, 5-day gain window.",
+    "Watch Plot 1 through the summer. Pre-graze biomass falls, so the grass trigger fires sooner and stays get shorter. Shorter stays also mean shorter rest. A pure floor rule speeds the rotation up exactly when regrowth slows.",
+    "Watch Plot 2b. The gain band is far wider than the change it is meant to detect. With ten head, many gain moves are fired by gut fill and camera error rather than by forage."]],
+  dry: ["Scenario: dry spell", [
+    "The grazing-sim dry season: 60 percent of normal rain and 1 \u00b0C warmer, with the same controller settings.",
+    "Regrowth falls, pre-graze biomass drops toward the floor, and the herd loses weight through midsummer. In this model the grass trigger does most of the work in a dry season.",
+    "Why the gain trigger does not fire first here: in grazing-sim, forage quality falls only as the sward matures, not with drought. A quality drop ahead of quantity is not in the model."]],
+  noisy: ["Scenario: high sensor noise", [
+    "All sensor errors and gut fill are doubled, and the minimum stay is 1 day.",
+    "Watch the move log. With d\u2098\u1d62\u2099 = 1, noisy readings move the herd after a single day, again and again. Engineers call this chattering.",
+    "Now raise d\u2098\u1d62\u2099 to 3. The minimum stay acts as a dwell time: one noisy reading can no longer move the herd, and false moves fall."]],
+  producer: ["Scenario: producer methods", [
+    "The same season, with a plate meter as the only biomass sensor. Switch the sensor to Visual estimate and press Reset to compare, or run Compare the sensors below.",
+    "Turn on the outer loop and reset. The plate meter's steady calibration bias shrinks after the first cycle. A visual estimate improves less, because most of its error is day-to-day scatter."]],
+  field: ["Field data", [
+    "Field mode replays your records through the same estimator and controller. Nothing is simulated. The plant block shows no true values, because nobody has them. Clips appear as reference points on Plot 1.",
+    "Each morning the controller states what the rule would do. The move log sets that next to what was done. Days the rule would have moved the herd but it stayed are listed as well.",
+    "Records can be typed, pasted, loaded from a file, or exported from a simulated season to see the format. The same format can be written by the lab's UAV, rover, and camera pipelines once they run."]]
+};
+function showInfo(key) {
+  var it = INFO[key] || INFO.about;
+  $("info").innerHTML = "<h2>" + it[0] + "</h2>" + it[1].map(function (p) { return "<p>" + p + "</p>"; }).join("");
+  Array.prototype.forEach.call(document.querySelectorAll(".blk"), function (b) { b.classList.toggle("sel", b.id === key); });
+}
+
+// ---------- controls ----------
+var sliders = ["floor", "delta", "dmin", "dmax", "window", "calendarDays"];
+var resetKeys = ["weather", "recordYear", "noiseMap", "noiseCamera", "noiseFill", "seed", "bioSensor"];
+var fieldNums = { fHead: "head", fPaddocks: "paddocks", fAreaAc: "areaAc", fInitialBW: "initialBW", fRegrowthPrior: "regrowthPrior" };
+var relTypes = ["uav", "rover", "map", "plate", "visual", "clip"];
+(function () { var h = ""; relTypes.forEach(function (t) { h += "<label for=\"rs-" + t + "\">" + t + "</label><input type=\"number\" id=\"rs-" + t + "\" min=\"0.005\" max=\"1\" step=\"0.005\">"; }); $("relseBox").innerHTML = h; })();
+
+function syncControls() {
+  sliders.forEach(function (k) { $(k).value = settings[k]; });
+  resetKeys.forEach(function (k) { $(k).value = settings[k]; });
+  $("calibrate").checked = settings.calibrate; $("useClips").checked = settings.useClips;
+  for (var id in fieldNums) $(id).value = settings.field[fieldNums[id]];
+  relTypes.forEach(function (t) { $("rs-" + t).value = settings.field.relSe[t]; });
+  Array.prototype.forEach.call(document.querySelectorAll("input[name=mode]"), function (r) { r.checked = r.value === settings.mode; });
+  Array.prototype.forEach.call(document.querySelectorAll("input[name=view]"), function (r) { r.checked = r.value === view; });
+  Array.prototype.forEach.call(document.querySelectorAll(".tabs button"), function (b) { b.setAttribute("aria-selected", String(b.getAttribute("data-src") === settings.source)); });
+  Array.prototype.forEach.call(document.querySelectorAll("[data-only]"), function (e) { e.hidden = e.getAttribute("data-only") !== settings.source; });
+  outputs();
+  renderMeasStatus();
+  $("yearRow").style.display = settings.weather === "record" ? "" : "none";
+}
+function outputs() {
+  setText("o-floor", settings.floor + " kg/ha (" + Math.round(settings.floor * LB) + " lb/ac)");
+  setText("o-delta", settings.delta + " %"); setText("o-dmin", settings.dmin + " d"); setText("o-dmax", settings.dmax + " d");
+  setText("o-window", settings.window + " d"); setText("o-calendarDays", settings.calendarDays + " d");
+  $("calRow").style.display = settings.mode === "calendar" ? "" : "none";
+}
+function readControls(changed) {
+  var raw = JSON.parse(JSON.stringify(settings));
+  sliders.forEach(function (k) { raw[k] = Number($(k).value); });
+  resetKeys.forEach(function (k) { raw[k] = k === "seed" ? Number($(k).value) : $(k).value; });
+  raw.calibrate = $("calibrate").checked; raw.useClips = $("useClips").checked;
+  for (var id in fieldNums) raw.field[fieldNums[id]] = Number($(id).value);
+  relTypes.forEach(function (t) { raw.field.relSe[t] = Number($("rs-" + t).value); });
+  var m = document.querySelector("input[name=mode]:checked"); if (m) raw.mode = m.value;
+  var note = "";
+  if (raw.dmin > raw.dmax) {
+    if (changed === "dmax") { raw.dmin = raw.dmax; note = "d\u2098\u1d62\u2099 lowered to " + raw.dmin + " d so that d\u2098\u1d62\u2099 \u2264 d\u2098\u2090\u2093."; }
+    else { raw.dmax = raw.dmin; note = "d\u2098\u2090\u2093 raised to " + raw.dmax + " d so that d\u2098\u1d62\u2099 \u2264 d\u2098\u2090\u2093."; }
+  }
+  var s = G.sanitize(raw);
+  if (!note && s.notes.length) note = "Clamped: " + s.notes.join("; ") + ".";
+  settings = s; $("clampNote").textContent = note;
+  syncControls(); save();
+  var restart = resetKeys.indexOf(changed) >= 0 || changed === "calibrate" || changed === "useClips" || changed === "field";
+  if (restart) { reset(); setStatus("Run restarted with the new setting."); }
+  else if (sim) { sim.setSettings(G.sanitize(settings)); renderAll(); }
+}
+sliders.forEach(function (k) { $(k).addEventListener("input", function () { readControls(k); }); });
+resetKeys.forEach(function (k) { $(k).addEventListener("change", function () { readControls(k); }); });
+["calibrate", "useClips"].forEach(function (k) { $(k).addEventListener("change", function () { readControls(k); }); });
+Object.keys(fieldNums).concat(relTypes.map(function (t) { return "rs-" + t; })).forEach(function (id) { $(id).addEventListener("change", function () { readControls("field"); }); });
+Array.prototype.forEach.call(document.querySelectorAll("input[name=mode]"), function (r) { r.addEventListener("change", function () { readControls("mode"); }); });
+Array.prototype.forEach.call(document.querySelectorAll("input[name=view]"), function (r) { r.addEventListener("change", function () { view = r.value; save(); drawPlots(); }); });
+Array.prototype.forEach.call(document.querySelectorAll(".tabs button"), function (b) {
+  b.addEventListener("click", function () { settings.source = b.getAttribute("data-src"); settings = G.sanitize(settings); syncControls(); save(); reset(); showInfo(isField() ? "field" : "about"); });
+});
+
+var SCN = {
+  normal: { weather: "average", noiseMap: "medium", noiseCamera: "medium", noiseFill: "medium", floor: 1500, delta: 30, dmin: 2, dmax: 7, window: 5, mode: "dual", bioSensor: "map", calibrate: false },
+  dry: { weather: "dry", noiseMap: "medium", noiseCamera: "medium", noiseFill: "medium", floor: 1500, delta: 30, dmin: 2, dmax: 7, window: 5, mode: "dual", bioSensor: "map", calibrate: false },
+  noisy: { weather: "average", noiseMap: "high", noiseCamera: "high", noiseFill: "high", floor: 1500, delta: 30, dmin: 1, dmax: 7, window: 5, mode: "dual", bioSensor: "map", calibrate: false },
+  producer: { weather: "average", noiseMap: "medium", noiseCamera: "medium", noiseFill: "medium", floor: 1500, delta: 30, dmin: 2, dmax: 7, window: 5, mode: "dual", bioSensor: "plate", calibrate: false }
+};
+(function () { var sc = document.querySelector(".scn[data-only=\"sim\"]"); var b = document.createElement("button"); b.type = "button"; b.setAttribute("data-scn", "producer"); b.textContent = "Producer methods"; sc.appendChild(b); })();
+Array.prototype.forEach.call(document.querySelectorAll("[data-scn]"), function (b) {
+  b.addEventListener("click", function () {
+    var sc = SCN[b.getAttribute("data-scn")], raw = JSON.parse(JSON.stringify(settings)); for (var k in sc) raw[k] = sc[k];
+    settings = G.sanitize(raw); $("clampNote").textContent = ""; syncControls(); save(); reset(); showInfo(b.getAttribute("data-scn"));
+    setStatus("Scenario loaded. Press Play.");
+  });
+});
+
+// ---------- transport ----------
+function setStatus(t) { setText("status", t); }
+function totalDays() { return sim ? sim.days : G.BASE.seasonDays; }
+function reset() {
+  pause(); fireInfo = null; clearTimeout(flashTimer); exShown = 0; exLines = [];
+  if (isField()) { parsed = G.parseCSV(fieldText); var ok = parsed.errors.length === 0; sim = G.createFieldRun(ok ? parsed : { records: [], startDate: null }, settings); reportParse(parsed); }
+  else sim = G.createSim(settings);
+  renderAll();
+  if (!isField() && sim.wxNote && /^no usable/.test(sim.wxNote)) setStatus("Historical record selected but none loaded: using the average placeholder weather.");
+  setText("foot", "grazing-control-sim v" + G.VERSION + (isField() ? ", field data" : ", seed " + settings.seed));
+}
+function play() {
+  if (sim.done) { if (isField() && !sim.days) { setStatus("No field records to play. Add or load records, then press Apply."); return; } reset(); }
+  playing = true; lastT = 0; acc = 0; $("playBtn").textContent = "Pause"; $("diagram").classList.add("playing"); requestAnimationFrame(loop); setStatus("Running.");
+}
+function pause() { playing = false; $("playBtn").textContent = "Play"; $("diagram").classList.remove("playing"); }
+function loop(t) {
+  if (!playing) return;
+  if (!lastT) lastT = t;
+  acc += (t - lastT) / 1000 * Number($("speed").value); lastT = t;
+  var n = 0; while (acc >= 1 && n < 40 && !sim.done) { acc -= 1; tick(); n++; }
+  if (n) renderAll();
+  if (sim.done) { pause(); setStatus(isField() ? "End of the records." : "Season complete. Reset to run again, or run a comparison."); renderAll(); return; }
+  requestAnimationFrame(loop);
+}
+function tick() { var dec = sim.step(); if (dec && (dec.move || (isField() && sim.moves.length && sim.moves[sim.moves.length - 1].day === dec.day))) flash(dec); return dec; }
+$("playBtn").addEventListener("click", function () { if (playing) { pause(); setStatus("Paused."); } else play(); });
+$("stepBtn").addEventListener("click", function () { pause(); fireInfo = null; clearTimeout(flashTimer); if (!sim.done) { tick(); renderAll(); } setStatus("Stepped one day."); });
+$("resetBtn").addEventListener("click", function () { reset(); setStatus(isField() ? "Reset to the first record." : "Reset. Same seed, same season."); });
+document.addEventListener("keydown", function (e) {
+  var tg = e.target.tagName; if (tg === "INPUT" || tg === "SELECT" || tg === "BUTTON" || tg === "TEXTAREA") return;
+  if (e.key === " ") { e.preventDefault(); $("playBtn").click(); } else if (e.key === "ArrowRight") { $("stepBtn").click(); }
+});
+Array.prototype.forEach.call(document.querySelectorAll(".blk"), function (b) {
+  b.addEventListener("click", function () { showInfo(b.id); });
+  b.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); showInfo(b.id); } });
+});
+function trigName(f) { return f === "grass" ? "grass trigger" : f === "gain" ? "gain trigger" : f === "grass and gain" ? "grass and gain" : f === "max stay" ? "maximum stay" : f === "calendar" ? "calendar" : f === "manual" ? "rule said stay" : "none"; }
+function flash(dec) {
+  var name = dec.move ? trigName(dec.fired) : "herd moved; rule said stay";
+  var hold = playing ? Math.min(700, 2500 / Number($("speed").value)) : 900;
+  fireInfo = { day: dec.day, name: name, until: Date.now() + hold, rule: dec.move };
+  clearTimeout(flashTimer); flashTimer = setTimeout(function () { fireInfo = null; if (sim) renderDiagram(); }, hold + 20);
+}
+
+// ---------- rendering: diagram ----------
+function dateOf(d) {
+  var start = sim && sim.startDate ? sim.startDate : null;
+  if (!start) return "day " + d;
+  var t = new Date(Date.parse(start + "T00:00:00Z") + d * 86400000), m = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  return m[t.getUTCMonth()] + " " + t.getUTCDate() + (isField() ? ", " + t.getUTCFullYear() : "");
+}
+function renderDiagram() {
+  var s = sim, S = s.settings, L = s.log, i = L.day.length - 1, dec = s.lastDecision, ob = s.obs, field = isField();
+  setText("v-set1", "B* = " + S.floor + " kg/ha"); setText("v-set2", "(" + Math.round(S.floor * LB) + " lb/ac)");
+  setText("v-set3", "\u03b4 = " + S.delta + " %"); setText("v-set4", S.mode === "calendar" ? "calendar stay " + S.calendarDays + " d" : "d: " + S.dmin + " to " + S.dmax + " d, n = " + S.window);
+  var closed = S.mode !== "calendar";
+  setText("v-ctrl1", closed ? "Dual trigger" : "Calendar"); setText("v-ctrl2", (closed ? "closed loop" : "open loop") + (field ? ", advisory" : ""));
+  $("a-fb").setAttribute("class", closed ? "sig fb live" : "sig off"); $("a-fb").setAttribute("marker-end", closed ? "url(#ahb)" : "");
+  $("a-fb-l").textContent = closed ? "x\u0302(k), P(k)" : "not used";
+  var firing = fireInfo && Date.now() < fireInfo.until;
+  $("b-ctrl").classList.toggle("fire", !!(firing && fireInfo.rule));
+  if (!dec) { setText("v-ctrl3", "Day 0: waiting"); setText("v-ctrl4", "press Play or Step"); }
+  else if (firing && fireInfo.rule) { setText("v-ctrl3", "Day " + fireInfo.day + ": " + (field ? "rule says MOVE" : "MOVE")); setText("v-ctrl4", "fired: " + fireInfo.name); }
+  else {
+    setText("v-ctrl3", "Day " + dec.day + ": " + (field ? "rule says " : "") + (dec.move ? "MOVE" : "STAY"));
+    var held = closed && !dec.move && (dec.grassFire || dec.gainFire) && dec.stay < S.dmin;
+    setText("v-ctrl4", !closed ? ("day " + dec.stay + " of " + S.calendarDays) : held ? ((dec.grassFire ? "grass" : "gain") + " fired, held: day " + dec.stay + " < d\u2098\u1d62\u2099") : ("grass " + (dec.grassFire ? "yes" : "no") + ", gain " + (dec.gainFire ? "yes" : "no") + ", day " + dec.stay + " of stay"));
+  }
+  var movedToday = s.moves.length && dec && s.moves[s.moves.length - 1].day === dec.day;
+  setText("v-act1", "u = " + (movedToday ? "move" : "stay") + (field ? " (done)" : ""));
+  setText("v-act2", movedToday ? "gate to paddock " + (s.cur + 1) : "gate closed");
+  if (field) {
+    setText("v-dist", ob.tempToday !== null ? "air " + fmt(ob.tempToday, 1) + " \u00b0C (from records)" : "not recorded; no heat effect assumed");
+    setText("v-pl1", "Paddock " + (s.cur + 1) + ", day " + s.stay + " of stay");
+    setText("v-pl2", "True state not observed.");
+    var lc = ob.clipLog.length ? ob.clipLog[ob.clipLog.length - 1] : null;
+    setText("v-pl3", lc ? "Last clips: P" + (lc.p + 1) + ", " + fmt(lc.mean, 0) + " \u00b1 " + fmt(1.96 * lc.se, 0) + " kg/ha" : "No clips yet.");
+    setText("v-pl4", s.head + " head on " + fmt(S.field.areaAc, 2) + " ac paddocks");
+  } else {
+    var wx = s.weather[Math.max(0, s.day - 1)] || s.weather[0];
+    setText("v-dist", fmt(wx.temp, 1) + " \u00b0C, rain " + fmt(wx.rain, 0) + " mm, soil water " + fmt(wx.fW * 100, 0) + " %");
+    var Wt = 0; s.herd.forEach(function (a) { Wt += a.BW; }); Wt /= s.herd.length;
+    setText("v-pl1", "Paddock " + (s.cur + 1) + ", day " + s.stay + " of stay");
+    setText("v-pl2", "B = " + fmt(s.trueB[s.cur], 0) + " kg/ha (true)");
+    setText("v-pl3", "W = " + fmt(Wt, 1) + " kg (true, herd mean)");
+    setText("v-pl4", s.lastDay ? "intake " + fmt(s.lastDay.intakePerHead, 1) + " kg DM/head/d, TDN " + fmt(s.lastDay.tdn, 0) + " %" : "intake not started");
+  }
+  var mo = ob.lastObs && ob.lastObs.map;
+  setText("v-s1", mo ? "y\u2081 " + mo.type + " (" + mo.role + ", P" + (mo.p + 1) + "): " + fmt(mo.raw, 0) + " kg/ha" : "y\u2081 biomass: no reading today");
+  setText("v-s2", i >= 0 && isFinite(L.camMean[i]) ? "y\u2082 camera: " + fmt(L.camMean[i], 1) + " kg herd mean" : "y\u2082 camera: no reading");
+  setText("v-s3", field ? "y\u2083 tags: not in records" : "y\u2083 tags: logged, not used in v1");
+  var Bh = ob.Bhat[s.cur], band = 1.96 * Math.sqrt(ob.Pvar[s.cur]);
+  setText("v-e1", "B\u0302 = " + fmt(Bh, 0) + " \u00b1 " + fmt(band, 0) + " kg/ha (" + fmt(Bh * LB, 0) + " lb/ac)");
+  setText("v-e2", "\u011d = " + fmt(ob.gHat, 2) + " \u00b1 " + fmt(1.96 * ob.gSe, 2) + " kg/d over n = " + S.window + " d");
+  var thr = (isFinite(ob.gMax) && ob.gMax > 0) ? (1 - S.delta / 100) * ob.gMax : NaN;
+  setText("v-e3", closed ? ("gain trigger if \u011d \u2264 " + fmt(thr, 2) + " kg/d (\u011d\u2098\u2090\u2093 = " + fmt(ob.gMax, 2) + ")") : "estimates computed, not used by the calendar");
+  setText("v-e4", "regrowth r\u0302 = " + fmt(ob.rHat, 0) + " kg/ha/d (" + (ob.regrowthPairs.length ? "from " + ob.regrowthPairs.length + " reading pairs" : "prior") + ")");
+  // outer loop
+  var on = !!S.calibrate; $("b-outer").classList.toggle("on", on);
+  ["a-o1", "a-o2"].forEach(function (id) { $(id).classList.toggle("on", on); });
+  var nPairs = 0, facs = []; for (var t in ob.calPairs) { nPairs += ob.calPairs[t].length; if (ob.calFactor[t]) facs.push(t + " x" + fmt(ob.calFactor[t], 2)); }
+  $("b-outer").querySelector(".t").textContent = on ? "Outer loop, once per 40-day cycle: sensor calibration against clips (active)" : "Outer loop, once per rotation cycle: year 2 of project (inactive)";
+  var sl = ob.scaleLog.length ? ob.scaleLog[ob.scaleLog.length - 1] : null;
+  setText("v-o1", "Clip pairs: " + nPairs + (facs.length ? ". Factors (sensor / clip): " + facs.join(", ") : "") + (ob.lastCalDay ? ", updated day " + ob.lastCalDay : "") + ". Scale: " + (sl ? fmt(sl.value, 1) + " kg on day " + sl.day + " (camera " + fmt(sl.camera - sl.value, 1) + " kg off)" : "none yet") + ".");
+}
+
+// ---------- rendering: ring ----------
+function mix(a, b, t) { var pa = parseInt(a.slice(1), 16), pb = parseInt(b.slice(1), 16); var r = [16, 8, 0].map(function (sh) { var x = (pa >> sh) & 255, y = (pb >> sh) & 255; return Math.round(x + (y - x) * t); }); return "rgb(" + r.join(",") + ")"; }
+function css(v) { return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+function renderRing() {
+  var s = sim, N = s.N, cx = 160, cy = 160, r0 = 58, r1 = 146, out = "", field = isField();
+  var vals = field ? s.obs.Bhat : s.trueB;
+  var c0 = css("--grass0") || "#EDE5D2", c1 = css("--forest") || "#2F5A3C";
+  var dark = document.documentElement.getAttribute("data-theme") === "dark" || (window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches && document.documentElement.getAttribute("data-theme") !== "light");
+  for (var p = 0; p < N; p++) {
+    var a0 = (p / N) * 2 * Math.PI - Math.PI / 2 + 0.02, a1 = ((p + 1) / N) * 2 * Math.PI - Math.PI / 2 - 0.02;
+    var v = vals[p], t = isFinite(v) ? Math.max(0, Math.min(1, (v - 800) / 2400)) : 0;
+    var d = "M" + (cx + r0 * Math.cos(a0)) + "," + (cy + r0 * Math.sin(a0)) + " L" + (cx + r1 * Math.cos(a0)) + "," + (cy + r1 * Math.sin(a0)) +
+      " A" + r1 + "," + r1 + " 0 0 1 " + (cx + r1 * Math.cos(a1)) + "," + (cy + r1 * Math.sin(a1)) +
+      " L" + (cx + r0 * Math.cos(a1)) + "," + (cy + r0 * Math.sin(a1)) + " A" + r0 + "," + r0 + " 0 0 0 " + (cx + r0 * Math.cos(a0)) + "," + (cy + r0 * Math.sin(a0)) + " Z";
+    out += "<path class=\"wedge\" d=\"" + d + "\" fill=\"" + (isFinite(v) ? mix(c0, c1, t) : c0) + "\"/>";
+    if (p === s.cur) out += "<path class=\"cur\" d=\"" + d + "\"/>";
+    var am = (a0 + a1) / 2, rr0 = N > 14 ? 124 : 108, tx = cx + rr0 * Math.cos(am), ty = cy + rr0 * Math.sin(am);
+    var light = dark ? t < 0.55 : t > 0.5, col = light ? "#FFFDF8" : (dark ? "#E7E1D4" : "#2A2A2A");
+    out += "<text class=\"wl\" x=\"" + tx + "\" y=\"" + (ty - 2) + "\" style=\"fill:" + col + "\">P" + (p + 1) + "</text>";
+    if (N <= 14) out += "<text class=\"wv\" x=\"" + tx + "\" y=\"" + (ty + 11) + "\" style=\"fill:" + col + "\">" + (level === "explore" ? n0(v * LB) : fmt(v, 0)) + "</text>";
+    if (p === s.cur) for (var h = 0; h < 10; h++) { var ah = a0 + (a1 - a0) * (0.18 + 0.64 * ((h % 5) / 4)), rh = 78 + (h < 5 ? 0 : 10); out += "<circle class=\"herd\" cx=\"" + (cx + rh * Math.cos(ah)) + "\" cy=\"" + (cy + rh * Math.sin(ah)) + "\" r=\"" + (N > 14 ? 2.4 : 3.6) + "\"/>"; }
+  }
+  out += "<circle class=\"ctr\" cx=\"160\" cy=\"160\" r=\"46\"/><text x=\"160\" y=\"156\" text-anchor=\"middle\" style=\"font-size:11.5px\">water and</text><text x=\"160\" y=\"171\" text-anchor=\"middle\" style=\"font-size:11.5px\">weigh station</text>";
+  $("ring").innerHTML = out;
+  $("ringCap").textContent = level === "explore" ? "Ten 1-acre paddocks around the water trough. Darker green means more grass. Numbers are pounds of grass per acre. The outlined paddock has the cattle." : field ? "Paddocks around the water point. Shade is the estimated standing biomass, since the truth is not known. The outlined paddock holds the herd." :
+    "Ten 1-acre paddocks around the water point, where the walk-through station sits. Shade is true standing biomass. The outlined paddock holds the herd.";
+  var ev = s.events, last = ev.length ? ev[ev.length - 1] : null;
+  $("ringRead").innerHTML =
+    "<div><span>Herd in</span><span>paddock " + (s.cur + 1) + ", day " + s.stay + "</span></div>" +
+    "<div><span>Moves so far</span><span>" + s.moves.length + "</span></div>" +
+    "<div><span>Mean stay so far</span><span>" + (ev.length ? fmt(ev.reduce(function (a, e) { return a + e.days; }, 0) / ev.length, 1) + " d" : "n/a") + "</span></div>" +
+    "<div><span>" + (field ? "Paddock just left, estimate now" : "Last exit residual (true)") + "</span><span>" + (last ? fmt(field ? s.obs.Bhat[last.paddock] : last.postTrue, 0) + " kg/ha" : "n/a") + "</span></div>" +
+    "<div><span>Date</span><span>" + dateOf(Math.min(s.day, totalDays() - 1)) + "</span></div>";
+}
+
+// ---------- rendering: plots ----------
+function plotFrame(svg, H, x0, x1, y0, y1, yTicks) {
+  var W = Math.max(320, svg.clientWidth || svg.parentNode.clientWidth - 16), ml = 52, mr = 12, mt = 8, mb = 26;
+  svg.setAttribute("viewBox", "0 0 " + W + " " + H);
+  var X = function (d) { return ml + (d - x0) / Math.max(1, x1 - x0) * (W - ml - mr); };
+  var Y = function (v) { return mt + (1 - (v - y0) / (y1 - y0)) * (H - mt - mb); };
+  var g = "";
+  yTicks.forEach(function (v) { g += "<line class=\"gridl\" x1=\"" + ml + "\" x2=\"" + (W - mr) + "\" y1=\"" + Y(v) + "\" y2=\"" + Y(v) + "\"/><text class=\"ax\" x=\"" + (ml - 6) + "\" y=\"" + (Y(v) + 4) + "\" text-anchor=\"end\">" + v + "</text>"; });
+  var step = (x1 - x0) > 100 ? 30 : 10;
+  for (var d = Math.ceil(x0 / step) * step; d <= x1; d += step) g += "<text class=\"ax\" x=\"" + X(d) + "\" y=\"" + (H - 8) + "\" text-anchor=\"middle\">" + d + "</text>";
+  g += "<line class=\"axl\" x1=\"" + ml + "\" x2=\"" + ml + "\" y1=\"" + mt + "\" y2=\"" + (H - mb) + "\"/><line class=\"axl\" x1=\"" + ml + "\" x2=\"" + (W - mr) + "\" y1=\"" + (H - mb) + "\" y2=\"" + (H - mb) + "\"/>";
+  g += "<text class=\"ax\" x=\"" + (W - mr) + "\" y=\"" + (H - 8) + "\" text-anchor=\"end\" dy=\"-12\">day</text>";
+  return { X: X, Y: Y, g: g, W: W, H: H, mt: mt, mb: mb, ml: ml, mr: mr };
+}
+function line(xs, ys, X, Y, attrs) {
+  var d = "", pen = false;
+  for (var i = 0; i < xs.length; i++) { var v = ys[i]; if (v === null || !isFinite(v)) { pen = false; continue; } d += (pen ? "L" : "M") + X(xs[i]).toFixed(1) + "," + Y(v).toFixed(1); pen = true; }
+  return d ? "<path d=\"" + d + "\" fill=\"none\" " + attrs + "/>" : "";
+}
+function bandPath(xs, lo, hi, X, Y, fill) {
+  var segs = [], cur = [];
+  for (var i = 0; i < xs.length; i++) { if (isFinite(lo[i]) && isFinite(hi[i])) cur.push(i); else if (cur.length) { segs.push(cur); cur = []; } }
+  if (cur.length) segs.push(cur);
+  return segs.map(function (s) { var d = s.map(function (i, k) { return (k ? "L" : "M") + X(xs[i]).toFixed(1) + "," + Y(hi[i]).toFixed(1); }).join("");
+    d += s.slice().reverse().map(function (i) { return "L" + X(xs[i]).toFixed(1) + "," + Y(lo[i]).toFixed(1); }).join("") + "Z";
+    return "<path d=\"" + d + "\" fill=\"" + fill + "\" stroke=\"none\"/>"; }).join("");
+}
+function moveLines(f, x0, x1) {
+  var o = "";
+  sim.moves.forEach(function (m) { if (m.day < x0 || m.day > x1) return;
+    var col = m.fired === "grass" ? "var(--forest)" : (m.fired === "gain" || m.fired === "grass and gain") ? "var(--burg)" : m.fired === "calendar" ? "var(--navy)" : "var(--muted)";
+    o += "<line x1=\"" + f.X(m.day) + "\" x2=\"" + f.X(m.day) + "\" y1=\"" + f.mt + "\" y2=\"" + (f.H - f.mb) + "\" stroke=\"" + col + "\" stroke-width=\"1\" opacity=\"0.45\"" + (m.wrong === "false" || m.fired === "manual" ? " stroke-dasharray=\"3 3\"" : "") + "/>"; });
+  return o;
+}
+function niceTicks(lo, hi, n) { var span = hi - lo, st = Math.pow(10, Math.floor(Math.log10(span / n))), e = span / n / st; st *= e > 5 ? 10 : e > 2 ? 5 : e > 1 ? 2 : 1; var t = []; for (var v = Math.ceil(lo / st) * st; v <= hi + 1e-9; v += st) t.push(+v.toFixed(6)); return t; }
+var TYPE_COL = { map: "var(--ochre)", uav: "var(--ochre)", rover: "var(--ochre2)", plate: "var(--forest)", visual: "var(--muted)" };
+function drawPlots() {
+  var L = sim.log, n = L.day.length, full = Math.max(1, totalDays() - 1), x0, x1;
+  if (view === "60") { x1 = Math.max(60, n ? L.day[n - 1] : 0); x0 = Math.max(0, x1 - 60); } else { x0 = 0; x1 = full; }
+  var idx = []; for (var i = 0; i < n; i++) if (L.day[i] >= x0 && L.day[i] <= x1) idx.push(i);
+  var pick = function (a) { return idx.map(function (i) { return a[i]; }); }, xs = pick(L.day), ob = sim.obs, S = sim.settings;
+  // plot 1
+  var svg = $("p1"), f = plotFrame(svg, 230, x0, x1, 600, 3400, niceTicks(600, 3400, 6));
+  var o = f.g + moveLines(f, x0, x1), bh = pick(L.Bhat), bb = pick(L.Bband);
+  o += bandPath(xs, bh.map(function (v, k) { return v - bb[k]; }), bh.map(function (v, k) { return v + bb[k]; }), f.X, f.Y, "var(--band)");
+  o += "<line x1=\"" + f.ml + "\" x2=\"" + (f.W - f.mr) + "\" y1=\"" + f.Y(S.floor) + "\" y2=\"" + f.Y(S.floor) + "\" stroke=\"var(--forest)\" stroke-width=\"1.6\" stroke-dasharray=\"7 4\"/>";
+  o += "<text class=\"ax\" x=\"" + (f.W - f.mr - 4) + "\" y=\"" + (f.Y(S.floor) - 5) + "\" text-anchor=\"end\" style=\"fill:var(--forest)\">floor " + S.floor + " kg/ha</text>";
+  o += line(xs, pick(L.Btrue), f.X, f.Y, "stroke=\"var(--navy)\" stroke-width=\"1.8\"");
+  o += line(xs, bh, f.X, f.Y, "stroke=\"var(--burg)\" stroke-width=\"1.5\" stroke-dasharray=\"5 3\"");
+  var cl = function (v) { return Math.max(600, Math.min(3400, v)); };
+  ob.readLog.forEach(function (m) { if (m.day < x0 || m.day > x1 || m.role === "rest") return;
+    var c = TYPE_COL[m.type] || "var(--ochre)";
+    o += "<rect x=\"" + (f.X(m.day) - 3) + "\" y=\"" + (f.Y(cl(m.raw)) - 3) + "\" width=\"6\" height=\"6\" fill=\"" + (m.role === "post" ? "none" : c) + "\" stroke=\"" + c + "\" stroke-width=\"1.3\"/>"; });
+  ob.clipLog.forEach(function (c) { if (c.day < x0 || c.day > x1 || c.role === "rest") return;
+    var x = f.X(c.day) + (c.role === "post" ? -2 : 2);
+    o += "<line x1=\"" + x + "\" x2=\"" + x + "\" y1=\"" + f.Y(cl(c.mean - 1.96 * c.se)) + "\" y2=\"" + f.Y(cl(c.mean + 1.96 * c.se)) + "\" stroke=\"var(--navy)\" stroke-width=\"1.1\"/><circle cx=\"" + x + "\" cy=\"" + f.Y(cl(c.mean)) + "\" r=\"2.6\" fill=\"var(--navy)\"/>"; });
+  svg.innerHTML = o;
+  // plot 2a
+  var cm = pick(L.camMean), ct = pick(L.camTrueMean), sc = pick(L.scale), all = cm.concat(ct).concat(sc.filter(function (v) { return v !== null; })).filter(isFinite);
+  var lo = all.length ? Math.floor(Math.min.apply(null, all) / 10) * 10 - 10 : 250, hi = all.length ? Math.ceil(Math.max.apply(null, all) / 10) * 10 + 10 : 350;
+  svg = $("p2"); f = plotFrame(svg, 170, x0, x1, lo, hi, niceTicks(lo, hi, 4));
+  o = f.g + moveLines(f, x0, x1) + line(xs, ct, f.X, f.Y, "stroke=\"var(--muted)\" stroke-width=\"1.2\"");
+  xs.forEach(function (d, k) { if (isFinite(cm[k])) o += "<circle cx=\"" + f.X(d).toFixed(1) + "\" cy=\"" + f.Y(cm[k]).toFixed(1) + "\" r=\"2.2\" fill=\"none\" stroke=\"var(--navy)\" stroke-width=\"1.1\"/>"; });
+  sc.forEach(function (v, k) { if (v !== null) o += "<rect x=\"" + (f.X(xs[k]) - 4) + "\" y=\"" + (f.Y(v) - 4) + "\" width=\"8\" height=\"8\" fill=\"var(--ochre)\"/>"; });
+  svg.innerHTML = o;
+  // plot 2b
+  var gh = pick(L.gHat), gs = pick(L.gSe), gt = pick(L.gTrue), th = pick(L.thr);
+  svg = $("p3"); f = plotFrame(svg, 170, x0, x1, -3, 3, [-3, -2, -1, 0, 1, 2, 3]);
+  var clip = function (a) { return a.map(function (v) { return isFinite(v) ? Math.max(-3, Math.min(3, v)) : v; }); };
+  o = f.g + moveLines(f, x0, x1);
+  o += bandPath(xs, clip(gh.map(function (v, k) { return v - 1.96 * gs[k]; })), clip(gh.map(function (v, k) { return v + 1.96 * gs[k]; })), f.X, f.Y, "var(--band)");
+  o += "<line x1=\"" + f.ml + "\" x2=\"" + (f.W - f.mr) + "\" y1=\"" + f.Y(0) + "\" y2=\"" + f.Y(0) + "\" stroke=\"var(--muted)\" stroke-width=\"0.8\"/>";
+  o += line(xs, clip(gt), f.X, f.Y, "stroke=\"var(--muted)\" stroke-width=\"1.3\" stroke-dasharray=\"4 3\"");
+  o += line(xs, clip(gh), f.X, f.Y, "stroke=\"var(--burg)\" stroke-width=\"1.5\"");
+  xs.forEach(function (d, k) { if (isFinite(th[k])) { var y = f.Y(Math.max(-3, Math.min(3, th[k]))); o += "<line x1=\"" + (f.X(d) - 2.5) + "\" x2=\"" + (f.X(d) + 2.5) + "\" y1=\"" + y + "\" y2=\"" + y + "\" stroke=\"var(--ochre)\" stroke-width=\"2\"/>"; } });
+  svg.innerHTML = o;
+}
+
+// ---------- move log ----------
+function renderLog() {
+  var s = sim, m = s.moves, field = isField();
+  if (!m.length && !(field && s.recs.length)) { setText("logSum", field ? "No moves yet in the records." : "No moves yet."); $("log").innerHTML = ""; return; }
+  var html = "";
+  if (field) {
+    var agreed = m.filter(function (x) { return x.agreed; }).length;
+    setText("logSum", m.length + " moves in the records. The rule agreed on the day of " + agreed + ". On " + s.recs.length + " other mornings the rule said move and the herd stayed.");
+    var items = m.map(function (x) { return { day: x.day, t: "m", x: x }; }).concat(s.recs.map(function (x) { return { day: x.day, t: "r", x: x }; })).sort(function (a, b) { return b.day - a.day; }).slice(0, 60);
+    items.forEach(function (it) {
+      var x = it.x;
+      if (it.t === "m") html += "<div>" + dateOf(x.day) + ": moved P" + (x.from + 1) + " to P" + (x.to + 1) + " after " + x.stay + " d" + (x.agreed ? "<span class=\"tag " + tagCls(x.fired) + "\">rule agreed: " + x.fired + "</span>" : "<span class=\"tag bad\">rule said stay</span>") + "</div>";
+      else html += "<div>" + dateOf(x.day) + ": herd stayed in P" + (x.paddock + 1) + " (day " + x.stay + ")<span class=\"tag " + tagCls(x.fired) + "\">rule said move: " + x.fired + "</span></div>";
+    });
+  } else {
+    var f = m.filter(function (x) { return x.wrong === "false"; }).length, miss = s.events.filter(function (e) { return e.missed; }).length + (s.eventOpen && s.eventOpen.missed ? 1 : 0);
+    setText("logSum", m.length + " moves. False moves so far: " + f + ". Stays with a missed move: " + miss + ". A false move fired on the estimate when neither true condition held; a missed move is a day the true state called for a move and the herd stayed.");
+    for (var i = m.length - 1; i >= Math.max(0, m.length - 40); i--) {
+      var x = m[i];
+      html += "<div>Day " + x.day + ": left paddock " + (x.from + 1) + " after " + x.stay + " d<span class=\"tag " + tagCls(x.fired) + "\">" + x.fired + "</span>" + (x.wrong === "false" ? "<span class=\"tag bad\">false move</span>" : "") + "</div>";
+    }
+  }
+  $("log").innerHTML = html;
+}
+function tagCls(f) { return f === "grass" ? "grass" : (f === "gain" || f === "grass and gain") ? "gain" : f === "calendar" ? "cal" : "max"; }
+function renderFieldSum() {
+  if (!isField()) return;
+  var s = sim, ob = s.obs, clipsPost = ob.clipLog.filter(function (c) { return c.role === "post"; }), clipsPre = ob.clipLog.filter(function (c) { return c.role === "pre"; });
+  var rows = [["Days replayed", s.log.day.length + " of " + s.days], ["Moves recorded", s.moves.length], ["Rule agreed on the move day", s.moves.filter(function (x) { return x.agreed; }).length],
+    ["Mornings the rule said move but the herd stayed", s.recs.length],
+    ["Mean clip biomass at turn-in, kg DM/ha", clipsPre.length ? fmt(clipsPre.reduce(function (a, c) { return a + c.mean; }, 0) / clipsPre.length, 0) + " (n = " + clipsPre.length + ")" : "no clips"],
+    ["Mean clip biomass at exit, kg DM/ha", clipsPost.length ? fmt(clipsPost.reduce(function (a, c) { return a + c.mean; }, 0) / clipsPost.length, 0) + " (n = " + clipsPost.length + ")" : "no clips"],
+    ["Exits below the floor by clips", clipsPost.length ? clipsPost.filter(function (c) { return c.mean < s.settings.floor; }).length + " of " + clipsPost.length : "no clips"]];
+  for (var t in ob.calPairs) rows.push(["Mean ratio " + t + " / clip (" + ob.calPairs[t].length + " pairs)", fmt(ob.calPairs[t].reduce(function (a, b) { return a + b; }, 0) / ob.calPairs[t].length, 3)]);
+  $("fieldSum").innerHTML = "<table><tbody>" + rows.map(function (r) { return "<tr><td>" + r[0] + "</td><td class=\"n\">" + r[1] + "</td></tr>"; }).join("") + "</tbody></table>";
+}
+function renderErrors() {
+  var box = $("errOut"); if (!box) return;
+  if (!parsed || parsed.errors.length || !parsed.records.length) { box.innerHTML = "<p class=\"small muted\">Apply records that include clips and at least one sensor on the same paddock and day.</p>"; return; }
+  var res = G.sensorErrors(parsed.records); lastErrors = res;
+  if (!res.length) { box.innerHTML = "<p class=\"small muted\">No sensor reading shares a paddock and day with clip quadrats yet.</p>"; return; }
+  var pc = function (v) { return isFinite(v) ? (v >= 0 ? "+" : "") + (100 * v).toFixed(1) + " %" : "n/a"; }, pp = function (v) { return isFinite(v) ? (100 * v).toFixed(1) + " %" : "n/a"; };
+  var unresolved = [];
+  var h = "<table><thead><tr><th>Sensor</th><th>Pairs</th><th>Bias</th><th>Scatter, measured</th><th>Clip mean SE</th><th>Scatter, sensor alone</th><th>RMSE</th><th>Simulator</th></tr></thead><tbody>";
+  res.forEach(function (r, i) {
+    var ok = r.n >= 5 && isFinite(r.sdNet), resolved = ok && r.sdNet >= 0.5 * r.sdRaw;
+    h += "<tr><td>" + r.type + "</td><td class=\"n\">" + r.n + "</td><td class=\"n\">" + pc(r.bias) + "</td><td class=\"n\">" + pp(r.sdRaw) + "</td><td class=\"n\">" + pp(r.clipSeRel) + "</td><td class=\"n\">" + (resolved || !ok ? pp(r.sdNet) : "not resolved") + "</td><td class=\"n\">" + pp(r.rmse) + "</td><td>" +
+      (!ok ? "<span class=\"muted\">needs 5 or more pairs</span>" : resolved ? "<button type=\"button\" data-use=\"" + i + "\" data-sd=\"net\">Use for " + G.BIO_SENSORS[r.simSensor].toLowerCase() + "</button>"
+        : "<button type=\"button\" data-use=\"" + i + "\" data-sd=\"raw\">Use, conservative (measured scatter)</button>") + "</td></tr>";
+    if (ok && !resolved) unresolved.push(r.type);
+  });
+  h += "</tbody></table><p class=\"small muted\" style=\"margin-top:6px\">Positive bias means the sensor reads high. Scatter with fewer than about 20 pairs is itself uncertain. UAV and rover both map to the simulator's map sensor.</p>";
+  if (unresolved.length) h += "<p class=\"small\" style=\"color:var(--ochre)\">Not resolved for " + unresolved.join(", ") + ": the clip mean's own sampling error is as large as the scatter, so the sensor's share cannot be separated. More quadrats per paddock (the SE falls with the square root of their number) or more pairs will resolve it. Until then the conservative choice uses the measured scatter, which includes the clip error.</p>";
+  box.innerHTML = h;
+  Array.prototype.forEach.call(box.querySelectorAll("[data-use]"), function (b) {
+    b.addEventListener("click", function () {
+      var r = lastErrors[Number(b.getAttribute("data-use"))];
+      var raw = b.getAttribute("data-sd") === "raw", sdUse = raw ? r.sdRaw : r.sdNet;
+      settings.measured[r.simSensor] = { bias: r.bias, sd: sdUse, n: r.n, from: r.type + " vs clips, " + r.n + " pairs" + (raw ? ", conservative" : "") };
+      settings = G.sanitize(settings); save(); renderMeasStatus();
+      b.textContent = "Sent to simulator"; b.disabled = true;
+      report([["ok", "Measured " + r.type + " error (bias " + pc(r.bias) + ", scatter " + pp(sdUse) + ") now drives the simulator's " + G.BIO_SENSORS[r.simSensor].toLowerCase() + ". Switch to Simulation to run it."]]);
+    });
+  });
+}
+var lastErrors = [];
+function renderMeasStatus() {
+  var box = $("measStatus"); if (!box) return; var h = "";
+  Object.keys(G.BIO_SENSORS).forEach(function (k) {
+    var m = settings.measured[k];
+    h += "<div class=\"meas\"><span>" + G.BIO_SENSORS[k] + ": " + (m ? "measured, bias " + (m.bias >= 0 ? "+" : "") + (100 * m.bias).toFixed(1) + " %, scatter " + (100 * m.sd).toFixed(1) + " % <span class=\"muted\">(" + esc(m.from) + ")</span>" : "<span class=\"muted\">placeholder</span>") + "</span>" +
+      (m ? "<button type=\"button\" data-clear=\"" + k + "\">Clear</button>" : "") + "</div>";
+  });
+  h += "<p class=\"g\">Measured errors come from Field data, Sensor error against clips. A measured error replaces the placeholder model; the noise level no longer scales it.</p>";
+  box.innerHTML = h;
+  Array.prototype.forEach.call(box.querySelectorAll("[data-clear]"), function (b) {
+    b.addEventListener("click", function () { settings.measured[b.getAttribute("data-clear")] = null; settings = G.sanitize(settings); save(); renderMeasStatus(); if (!isField()) { reset(); setStatus("Placeholder error restored. Season restarted."); } });
+  });
+}
+function renderAll() {
+  if (level === "explore") renderExplore();
+  renderDiagram(); renderRing(); drawPlots(); renderLog(); renderFieldSum();
+  setText("dayRead", (isField() && !sim.log.day.length && sim.done) ? "No field records applied" : "Day " + sim.day + " of " + totalDays() + ", " + dateOf(Math.min(sim.day, totalDays() - 1)));
+}
+
+// ---------- comparisons (simulation) ----------
+function scoreTable(cols, heads) {
+  var rows = [["Mean stay, days", "meanStay", 2, ""], ["Mean post-graze residual, kg DM/ha", "residual", 0, "lb"], ["Lowest post-graze residual, kg DM/ha", "minResidual", 0, "lb"],
+    ["Mean utilization, percent", "util", 0, "pct"], ["Gain per hectare, kg", "gainPerHa", 0, ""], ["Mean daily gain, kg/head/d", "adg", 2, ""],
+    ["False moves", "falseMoves", 0, ""], ["Stays with a missed move", "missedEvents", 0, ""], ["Wrong moves, total", "wrongMoves", 0, ""]];
+  var h = "<table><thead><tr><th>Score (true state)</th>" + heads.map(function (x) { return "<th>" + x + "</th>"; }).join("") + "</tr></thead><tbody>";
+  rows.forEach(function (r) { h += "<tr><td>" + r[0] + "</td>" + cols.map(function (c) { var v = c[r[1]] * (r[3] === "pct" ? 100 : 1); return "<td class=\"n\">" + fmt(v, r[2]) + (r[3] === "lb" ? " <span class=\"muted\">(" + fmt(v * LB, 0) + " lb/ac)</span>" : "") + "</td>"; }).join("") + "</tr>"; });
+  h += "<tr><td>Triggers that fired</td>" + cols.map(function (c) { return "<td>" + Object.keys(c.triggers).map(function (k) { return k + " " + c.triggers[k]; }).join(", ") + "</td>"; }).join("") + "</tr>";
+  return h + "</tbody></table>";
+}
+$("compareBtn").addEventListener("click", function () {
+  var b = this; b.disabled = true; b.textContent = "Running...";
+  setTimeout(function () {
+    var r = G.compare(settings);
+    $("compareOut").innerHTML = scoreTable([r.dual, r.calendar], ["Dual trigger (closed loop)", "Calendar, same mean stay (open loop)"]) +
+      "<p class=\"small muted\" style=\"margin-top:8px\">Seed " + settings.seed + ", " + settings.weather + " weather, " + G.BIO_SENSORS[settings.bioSensor].toLowerCase() + ". The calendar averages " + fmt(r.meanStay, 2) + " d per stay. One simulated season with placeholder parameters.</p>";
+    b.disabled = false; b.textContent = "Run the comparison";
+  }, 30);
+});
+$("sensorBtn").addEventListener("click", function () {
+  var b = this; b.disabled = true; b.textContent = "Running...";
+  setTimeout(function () {
+    var r = G.compareSensors(settings), keys = Object.keys(G.BIO_SENSORS);
+    $("sensorOut").innerHTML = scoreTable(keys.map(function (k) { return r[k]; }), keys.map(function (k) { return G.BIO_SENSORS[k]; })) +
+      "<p class=\"small muted\" style=\"margin-top:8px\">Seed " + settings.seed + ", dual trigger, outer loop " + (settings.calibrate ? "on" : "off") + ". Sensor errors are placeholders. Most false moves come from the gain trigger, which is the same in all three columns; the difference between columns is the biomass sensor.</p>";
+    b.disabled = false; b.textContent = "Compare the sensors";
+  }, 30);
+});
+$("exportSimBtn").addEventListener("click", function () {
+  var full = G.createSim(settings).run();
+  fieldText = G.exportCSV(full.records, full.startDate);
+  $("csv").value = fieldText; saveField();
+  var rs = {}; rs[settings.bioSensor === "map" ? "map" : settings.bioSensor] = true;
+  settings.source = "field"; settings.field.head = G.BASE.herd.head; settings.field.paddocks = G.BASE.paddocks; settings.field.areaAc = 1; settings.field.initialBW = G.BASE.herd.initialBW;
+  settings = G.sanitize(settings); syncControls(); save(); reset(); showInfo("field");
+  setStatus("Simulated season exported as field records (" + full.records.length + " rows). Press Play.");
+  $("fieldSec").scrollIntoView({ behavior: "smooth" });
+});
+
+// ---------- historical weather ----------
+var WXKEY = "grazing-control-sim-weather", wxText = "";
+function loadWx(text, quiet) {
+  wxText = text || ""; var rec = wxText ? G.parseWeatherCSV(wxText, $("wxUnits").value) : null;
+  G.setWeatherRecord(rec); renderWx(rec, quiet);
+  try { if (wxText && rec && !rec.errors.length) localStorage.setItem(WXKEY, JSON.stringify({ text: wxText, units: $("wxUnits").value })); else if (!wxText) localStorage.removeItem(WXKEY); }
+  catch (e) { if (!quiet) wxMsg([["warn", "The record is loaded but too large to keep in this browser. Load the file again next visit."]], true); }
+  return rec;
+}
+function wxMsg(items, append) { var h = items.map(function (x) { return "<div class=\"" + x[0] + "\">" + esc(x[1]) + "</div>"; }).join(""); $("wxReport").innerHTML = append ? $("wxReport").innerHTML + h : h; }
+function renderWx(rec, quiet) {
+  var ys = rec && !rec.errors.length ? rec.years : [], usable = ys.filter(function (y) { return y.usable; });
+  $("recordYear").innerHTML = usable.map(function (y) { return "<option value=\"" + y.year + "\">" + y.year + "</option>"; }).join("");
+  if (usable.length) { if (!usable.some(function (y) { return y.year === settings.recordYear; })) settings.recordYear = usable[usable.length - 1].year; $("recordYear").value = settings.recordYear; }
+  $("yearNote").textContent = usable.length ? usable.length + " usable years loaded." : "Load a weather record under Historical weather.";
+  $("wxAll").innerHTML = "";
+  if (!rec) { $("wxReport").innerHTML = "<div class=\"warn\">No record loaded. The simulation uses the placeholder weather.</div>"; $("wxNormals").innerHTML = ""; $("wxYears").innerHTML = ""; return; }
+  if (rec.errors.length) { wxMsg(rec.errors.map(function (e) { return ["err", e]; })); $("wxNormals").innerHTML = ""; $("wxYears").innerHTML = ""; return; }
+  var uName = { metric: "C and mm", standard: "F and inches", tenths: "tenths of C and mm (raw GHCN)" };
+  wxMsg([["ok", (rec.station || "Station not named in file") + ": " + rec.rows.length + " days, " + rec.rows[0].date + " to " + rec.rows[rec.rows.length - 1].date + ". Units read as " + uName[rec.units] + (rec.units === rec.detected ? " (detected)" : " (set by hand; detection said " + uName[rec.detected] + ")") + ". " + usable.length + " of " + ys.length + " seasons usable."],
+    ["warn", "Check the units: the midsummer mean below should be near 26 to 27 C for the Clemson area. If it is not, set Units by hand."]]);
+  var n = G.recordNormals(), mo = ["", "", "", "", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct"];
+  $("wxNormals").innerHTML = n && n.years ? "<table><thead><tr><th>Month</th><th>Mean temperature, record</th><th>Placeholder</th><th>Rain, record mean</th><th>Placeholder</th></tr></thead><tbody>" +
+    n.months.map(function (m) { return "<tr><td>" + mo[m.month] + "</td><td class=\"n\">" + fmt(m.recordTempC, 1) + " &#176;C</td><td class=\"n\">" + fmt(m.placeholderTempC, 1) + " &#176;C</td><td class=\"n\">" + fmt(m.recordRainMm, 0) + " mm</td><td class=\"n\">" + fmt(m.placeholderRainMm, 0) + " mm</td></tr>"; }).join("") +
+    "</tbody></table><p class=\"small muted\">Averages over " + n.years + " usable seasons. The placeholder columns are the grazing-sim weather this record replaces.</p>" : "";
+  $("wxYears").innerHTML = "<table><thead><tr><th>Season</th><th>Rain, mm</th><th>Mean temperature</th><th>Days above 28 &#176;C</th><th>Longest dry spell, d</th><th>Mean soil water</th><th>Gaps (temperature, rain)</th></tr></thead><tbody>" +
+    ys.map(function (y) { return "<tr" + (y.usable ? "" : " class=\"muted\"") + "><td>" + y.year + (y.usable ? "" : " (not used)") + "</td><td class=\"n\">" + fmt(y.rainMm, 0) + "</td><td class=\"n\">" + fmt(y.meanTempC, 1) + " &#176;C</td><td class=\"n\">" + y.hotDays + "</td><td class=\"n\">" + y.longestDrySpell + "</td><td class=\"n\">" + fmt(100 * y.meanSoilWater, 0) + " %</td><td class=\"n\">" + y.missingTemp + ", " + y.missingRain + "</td></tr>"; }).join("") +
+    "</tbody></table><p class=\"small muted\">A season is used when no more than 10 percent of its days lack temperature or rain. Temperature gaps are filled by interpolation; missing rain counts as none. Soil water uses the placeholder bucket.</p>";
+}
+$("wxFile").addEventListener("change", function () {
+  var f = this.files && this.files[0]; if (!f) return;
+  var rd = new FileReader(); rd.onload = function () { var rec = loadWx(String(rd.result)); if (rec && !rec.errors.length && rec.years.some(function (y) { return y.usable; })) { settings.weather = "record"; settings = G.sanitize(settings); syncControls(); save(); reset(); setStatus("Weather record loaded. Season " + settings.recordYear + " ready. Press Play."); } }; rd.readAsText(f);
+});
+$("wxUnits").addEventListener("change", function () { if (wxText) { loadWx(wxText); if (settings.weather === "record") reset(); } });
+$("wxClear").addEventListener("click", function () { loadWx(""); if (settings.weather === "record") { settings.weather = "average"; settings = G.sanitize(settings); syncControls(); save(); reset(); } });
+function pctl(a, q) { var s2 = a.filter(isFinite).slice().sort(function (x, y) { return x - y; }); if (!s2.length) return NaN; var i = (s2.length - 1) * q, lo = Math.floor(i), hi = Math.ceil(i); return s2[lo] + (s2[hi] - s2[lo]) * (i - lo); }
+$("wxRunAll").addEventListener("click", function () {
+  if (!G.WX.record) { $("wxAll").innerHTML = "<p class=\"small\" style=\"color:var(--burg)\">Load a weather record first.</p>"; return; }
+  var b = this; b.disabled = true; b.textContent = "Running...";
+  setTimeout(function () {
+    var R = G.runYears(settings);
+    var h = "<table><thead><tr><th>Season</th><th>Rain, mm</th><th>Gain per ha, dual</th><th>Gain per ha, calendar</th><th>Lowest residual, dual</th><th>Lowest residual, calendar</th><th>Wrong moves, dual</th><th>Wrong moves, calendar</th><th>Mean stay, d</th></tr></thead><tbody>";
+    R.forEach(function (r) { h += "<tr><td>" + r.year + "</td><td class=\"n\">" + fmt(r.wx.rainMm, 0) + "</td><td class=\"n\">" + fmt(r.dual.gainPerHa, 0) + "</td><td class=\"n\">" + fmt(r.calendar.gainPerHa, 0) + "</td><td class=\"n\">" + fmt(r.dual.minResidual, 0) + "</td><td class=\"n\">" + fmt(r.calendar.minResidual, 0) + "</td><td class=\"n\">" + r.dual.wrongMoves + "</td><td class=\"n\">" + r.calendar.wrongMoves + "</td><td class=\"n\">" + fmt(r.meanStay, 1) + "</td></tr>"; });
+    h += "</tbody></table>";
+    var col = function (f) { return R.map(f); }, row = function (lab, a, dcm) { return "<tr><td>" + lab + "</td><td class=\"n\">" + fmt(pctl(a, 0.1), dcm) + "</td><td class=\"n\">" + fmt(pctl(a, 0.5), dcm) + "</td><td class=\"n\">" + fmt(pctl(a, 0.9), dcm) + "</td></tr>"; };
+    var sum = "<table><thead><tr><th>Across " + R.length + " seasons</th><th>10th percentile</th><th>Median</th><th>90th percentile</th></tr></thead><tbody>" +
+      row("Gain per ha, dual trigger, kg", col(function (r) { return r.dual.gainPerHa; }), 0) + row("Gain per ha, calendar, kg", col(function (r) { return r.calendar.gainPerHa; }), 0) +
+      row("Lowest residual, dual trigger, kg DM/ha", col(function (r) { return r.dual.minResidual; }), 0) + row("Lowest residual, calendar, kg DM/ha", col(function (r) { return r.calendar.minResidual; }), 0) +
+      row("Wrong moves, dual trigger", col(function (r) { return r.dual.wrongMoves; }), 0) + row("Wrong moves, calendar", col(function (r) { return r.calendar.wrongMoves; }), 0) + "</tbody></table>";
+    $("wxAll").innerHTML = sum + "<p class=\"small muted\" style=\"margin-top:6px\">Seed " + settings.seed + " for animals and sensors in every season, so the differences between rows come from the weather. Pasture and animal parameters are still placeholders.</p>" + h;
+    b.disabled = false; b.textContent = "Run all years";
+  }, 30);
+});
+
+// ---------- field records editor ----------
+var UNITS = { bio: ["kg/ha", "lb/ac"], wt: ["kg", "lb"], temp: ["C", "F"], move: [""] };
+function setUnits() { var k = G.TYPES[$("rType").value]; $("rUnit").innerHTML = UNITS[k].map(function (u) { return "<option>" + u + "</option>"; }).join(""); $("rVal").disabled = k === "move"; }
+$("rType").addEventListener("change", setUnits); setUnits();
+$("rDate").value = new Date().toISOString().slice(0, 10);
+function csvHeaderIfEmpty() { if (!fieldText.trim()) fieldText = "date,paddock,type,value,unit,animal,n,sd,role,note\n"; }
+$("addRow").addEventListener("click", function () {
+  var t = $("rType").value, k = G.TYPES[t], v = $("rVal").value, p = $("rPad").value;
+  if (!$("rDate").value) { report([["err", "Enter a date."]]); return; }
+  if (k !== "move" && v === "") { report([["err", "Enter a value."]]); return; }
+  if ((k === "bio" || k === "move") && !p) { report([["err", "Enter a paddock."]]); return; }
+  fieldText = $("csv").value; csvHeaderIfEmpty();
+  if (!/\n$/.test(fieldText)) fieldText += "\n";
+  var animal = $("rAnimal").value.replace(/,/g, " ");
+  fieldText += [$("rDate").value, (k === "bio" || k === "move") ? p : "", t, k === "move" ? "" : v, $("rUnit").value, animal, "", "", $("rRole").value, ""].join(",") + "\n";
+  $("csv").value = fieldText; saveField();
+  report([["ok", "Added. Press Apply records to replay."]]);
+});
+$("fileIn").addEventListener("change", function () {
+  var f = this.files && this.files[0]; if (!f) return;
+  var rd = new FileReader(); rd.onload = function () { fieldText = String(rd.result); $("csv").value = fieldText; saveField(); applyRecords(); }; rd.readAsText(f);
+});
+$("exampleBtn").addEventListener("click", function () {
+  var ex = G.createSim({ seed: 42, bioSensor: "plate" }); for (var d = 0; d < 60; d++) ex.step();
+  fieldText = "# Example: 60 days of simulated records (seed 42, plate meter, clips, camera, scale). Replace with your own.\n" + G.exportCSV(ex.records, ex.startDate);
+  $("csv").value = fieldText; saveField(); applyRecords();
+});
+$("copyBtn").addEventListener("click", function () {
+  var t = $("csv").value;
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(function () { report([["ok", "Copied to the clipboard."]]); }, function () { $("csv").select(); report([["warn", "Copy was blocked. The text is selected: press Ctrl+C."]]); });
+  else { $("csv").select(); report([["warn", "The text is selected: press Ctrl+C."]]); }
+});
+$("dlBtn").addEventListener("click", function () {
+  try { var a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([$("csv").value], { type: "text/csv" })); a.download = "grazing-records.csv"; document.body.appendChild(a); a.click(); a.remove(); report([["ok", "Download started. If nothing happened, use Copy CSV."]]); }
+  catch (e) { report([["warn", "Download is not available here. Use Copy CSV."]]); }
+});
+$("clearBtn").addEventListener("click", function () { if (!window.confirm("Remove all field records from this browser?")) return; fieldText = ""; $("csv").value = ""; saveField(); applyRecords(); });
+$("applyBtn").addEventListener("click", applyRecords);
+$("cDate").value = new Date().toISOString().slice(0, 10);
+$("addClips").addEventListener("click", function () {
+  var area = Number($("cArea").value), p = $("cPad").value, d = $("cDate").value;
+  var vals = $("cVals").value.split(/[\s,;]+/).filter(function (x) { return x !== ""; }).map(Number);
+  if (!d || !p) { report([["err", "Enter a date and a paddock."]]); return; }
+  if (!(area > 0)) { report([["err", "Enter the frame area in square meters."]]); return; }
+  if (vals.length < 2 || vals.some(function (v) { return !isFinite(v) || v < 0; })) { report([["err", "Enter at least two dry weights in grams, separated by spaces or commas."]]); return; }
+  fieldText = $("csv").value; csvHeaderIfEmpty(); if (!/\n$/.test(fieldText)) fieldText += "\n";
+  var kg = vals.map(function (g) { return g / area * 10; });
+  kg.forEach(function (v, i) { fieldText += [d, p, "clip", v.toFixed(1), "kg/ha", "", "", "", $("cRole").value, "quadrat " + (i + 1) + ", " + vals[i] + " g on " + area + " m2"].join(",") + "\n"; });
+  var m = kg.reduce(function (a, b) { return a + b; }, 0) / kg.length, sd = Math.sqrt(kg.reduce(function (a, b) { return a + (b - m) * (b - m); }, 0) / (kg.length - 1)), se = sd / Math.sqrt(kg.length);
+  var tq = [12.71, 4.30, 3.18, 2.78, 2.57, 2.45, 2.36, 2.31, 2.26, 2.23, 2.20, 2.18, 2.16, 2.14, 2.13, 2.12, 2.11, 2.10, 2.09][Math.min(kg.length - 2, 18)] || 1.96;
+  $("csv").value = fieldText; saveField(); $("cVals").value = "";
+  report([["ok", kg.length + " quadrats added for paddock " + p + ": mean " + m.toFixed(0) + " kg DM/ha (" + (m * LB).toFixed(0) + " lb/ac), SE " + se.toFixed(0) + ", 95 percent interval " + (m - tq * se).toFixed(0) + " to " + (m + tq * se).toFixed(0) + ". Press Apply records."]]);
+});
+$("urlBtn").addEventListener("click", function () {
+  var u = $("urlIn").value.trim(); if (!u) { report([["err", "Enter a URL or a path such as data/field-records.csv."]]); return; }
+  report([["ok", "Loading..."]]);
+  try {
+    fetch(u, { cache: "no-store" }).then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.text(); })
+      .then(function (t) { fieldText = t; $("csv").value = t; saveField(); applyRecords(); })
+      .catch(function (e) { report([["err", "Could not load " + u + " (" + e.message + "). The site may not allow it, or the page is running from a file or inside the claude.ai preview. Download the file and use Load a CSV file instead."]]); });
+  } catch (e) { report([["err", "Loading from a URL is not available here. Use Load a CSV file."]]); }
+});
+function applyRecords() { fieldText = $("csv").value; saveField(); reset(); if (parsed && !parsed.errors.length && parsed.records.length) setStatus("Records applied. Press Play or Step."); }
+function report(items) { $("report").innerHTML = items.map(function (x) { return "<div class=\"" + x[0] + "\">" + esc(x[1]) + "</div>"; }).join(""); }
+function reportParse(p) {
+  var items = [];
+  if (!fieldText.trim()) items.push(["warn", "No records yet. Add rows, paste a CSV, load a file, or load the example."]);
+  else if (p.errors.length) { items.push(["err", p.errors.length + " problem(s). Nothing was applied."]); p.errors.slice(0, 12).forEach(function (e) { items.push(["err", e]); }); if (p.errors.length > 12) items.push(["err", "... and " + (p.errors.length - 12) + " more."]); }
+  else {
+    var c = p.counts, parts = Object.keys(c).map(function (k) { return k + " " + c[k]; });
+    items.push(["ok", p.records.length + " records over " + ((p.records.length ? p.records[p.records.length - 1].day : 0) + 1) + " days" + (p.startDate ? " from " + p.startDate : "") + ": " + parts.join(", ") + "."]);
+  }
+  p.warnings.forEach(function (w) { items.push(["warn", w]); });
+  report(items); renderErrors();
+}
+
+// ---------- parameter table ----------
+var PT = [
+  ["Season", "Apr 1 to Oct 31, 214 days", "grazing-sim", "Design"],
+  ["Mean daily temperature", "16.5 + 10.5 sin(2\u03c0(doy - 110)/365) \u00b0C, daily SD 3.0 \u00b0C", "grazing-sim; replace with NOAA 1991 to 2020 normals", "Placeholder"],
+  ["Rain", "probability 0.33 per day, mean 12 mm", "grazing-sim", "Placeholder"],
+  ["Weather scenarios", "dry: 0.6 x rain, +1 \u00b0C; wet: 1.4 x rain", "grazing-sim", "Placeholder"],
+  ["Soil water bucket", "field capacity 100 mm, wilting 30 mm, ET 0.12 mm/\u00b0C, minimum growth factor 0.10", "grazing-sim", "Placeholder"],
+  ["Tall fescue growth", "maximum 62 kg/ha/d; T 0, 20, 34 \u00b0C; ceiling 5000 kg/ha, half-saturation mass 700 kg/ha", "grazing-sim", "Placeholder"],
+  ["Senescence", "0.006 per day, +0.005 above 29 \u00b0C, +0.005 x (1 - soil water); acts above the ungrazeable residual", "grazing-sim", "Placeholder"],
+  ["Forage quality", "TDN = 66 - 12 B/5000 percent (maturity proxy)", "grazing-sim", "Placeholder"],
+  ["Ungrazeable residual", "800 kg/ha", "grazing-sim", "Placeholder"],
+  ["Initial biomass", "2600 kg/ha, CV 0.15 between paddocks", "grazing-sim", "Placeholder"],
+  ["Paddocks", "10 x 1 acre (0.405 ha); lumped to the paddock mean", "Handover scenario", "Design"],
+  ["Herd", "10 growing animals, 300 kg, SD 25 kg", "grazing-sim herd values, handover head count", "Design"],
+  ["Intake capacity", "2.6 percent of body weight per day", "NASEM 2016 via grazing-sim", "Literature"],
+  ["Heat effect on intake", "-3 percent per \u00b0C above 28 \u00b0C, floor 0.75", "grazing-sim", "Placeholder"],
+  ["Allowance limit on intake", "capacity x clamp((B - 800)/1200, 0, 1); intake plus trampling cannot take B below 800", "grazing-sim bite-size constraint at paddock scale", "Placeholder"],
+  ["Trampling", "15 percent of intake", "grazing-sim", "Placeholder"],
+  ["Energy partition and gain", "DE = 0.04409 TDN; ME = 0.82 DE; NEm and NEg cubic in ME; NEm requirement = 0.077 SBW^0.75 x 1.15; RE = 0.0635 EBW^0.75 EBG^1.097", "NRC 1996, NASEM 2016 via grazing-sim; verify coefficients", "Literature"],
+  ["Tissue loss energy", "6.0 Mcal per kg", "grazing-sim", "Placeholder"],
+  ["Gut fill b", "AR(1), SD 2.5 percent of body weight, coefficient 0.5", "grazing-sim", "Placeholder"],
+  ["Camera visits", "2.5 per day; x0.7 above 28 \u00b0C; timidity effect 0.5", "grazing-sim", "Placeholder"],
+  ["Camera error v\u2082", "persistent offset SD 3 percent of body weight per animal; per-visit SD 3 percent", "grazing-sim", "Placeholder"],
+  ["Map error", "flight bias 0.03, calibration bias 0.03, cell SD 0.14, shared share 0.4, 100 cells, 2 percent missing; relative SE 0.099", "grazing-sim", "Placeholder"],
+  ["Plate meter error", "calibration bias SD 0.12 (fixed per season, generic equation); per-pass SD 0.08 (about 40 drops); extra SD 0.05 on exit readings (trampled canopy); relative SE 0.144", "Set here; replace from plate meter literature and the lab's own comparisons", "Placeholder"],
+  ["Visual estimate error", "observer bias SD 0.15 (fixed per season); daily SD 0.20; pulls toward 2000 kg/ha with slope 0.7; relative SE 0.25", "Set here; replace from visual estimation literature and trained-observer trials", "Placeholder"],
+  ["Clip reference", "12 random quadrats at every turn-in and exit; within-paddock CV 0.30; lab error SD 0.02", "Set here; the CV comes from the lab's own clip data once collected", "Placeholder"],
+  ["Sensor schedule", "maps and plate: turn-in, day 2, exit; visual: every morning; one reading of every paddock on day 0", "Handover sensor schedule", "Design"],
+  ["Scale reference", "SD 2 kg; every 40 days and on the last day; never used in a decision", "grazing-sim error, schedule set here", "Design"],
+  ["Noise settings", "low 0.25 x, medium 1 x, high 2 x the placeholder errors", "Set here", "Design"],
+  ["Historical weather", "optional; daily record (NOAA GHCN-Daily or plain CSV) replaces the placeholder temperature and rain for a chosen season; soil bucket unchanged", "User file; Clemson University USC00381770 or Anderson USW00093846 suggested", "Design"],
+  ["Measured sensor errors", "optional; bias and scatter measured against clips in field records replace a sensor's placeholder model: y = B (1 + bias + e), e ~ N(0, scatter)", "Field records, via Sensor error against clips", "Design"],
+  ["Outer loop", "off by default; when on, every 40 days each biomass sensor gets a factor equal to its mean ratio to clip means so far; later readings are divided by it", "Set here", "Design"],
+  ["Residual floor B*", "default 1500 kg/ha (1338 lb/ac); allowed 1000 to 2000", "grazing-sim exit floor; calculators give 1200 to 1500 lb/ac for fescue", "Design"],
+  ["Gain drop \u03b4", "default 30 percent; allowed 10 to 40", "Calculators (25 to 40 percent); grazing-sim used 25", "Design"],
+  ["Stay limits", "d\u2098\u1d62\u2099 2 d (1 to 3), d\u2098\u2090\u2093 7 d (3 to 10)", "Handover ranges; calculator maximum 7 to 10 d; grazing-sim used 3 and 14", "Design"],
+  ["Gain window n", "default 5 d; allowed 3 to 5", "Handover; grazing-sim used 7", "Design"],
+  ["Calendar stay", "4 d", "Handover scenario", "Design"],
+  ["Control law", "move if B\u0302 \u2264 B* or \u011d \u2264 (1 - \u03b4) \u011d\u2098\u2090\u2093, with the stay limits; \u011d\u2098\u2090\u2093 is the best rolling gain since turn-in, used only when positive", "Control-loop notation (OR); grazing-sim Rule 4 used AND", "Design"],
+  ["Regrowth estimate", "prior 45 kg/ha/d (40 lb/ac/d) until the first exit-to-turn-in reading pairs, then the mean of the last 3 pairs", "Practice calculator spring value; method set here", "Design"],
+  ["Estimator", "one filter per paddock; each reading weighted by its sensor's relative SE; process noise: regrowth SD 15 kg/ha/d plus 10 percent of predicted removal", "Set here", "Design"],
+  ["Missing camera days", "an animal not seen keeps its last daily median", "Set here; grazing-sim averaged the animals seen", "Design"],
+  ["Field data defaults", "head, paddock count, area, start weight, regrowth prior, and sensor SEs are inputs; defaults match the simulation", "Set here", "Design"]
+];
+(function () { var tb = document.querySelector("#ptable tbody"), h = "";
+  PT.forEach(function (r) { h += "<tr><td>" + r[0] + "</td><td>" + r[1] + "</td><td>" + r[2] + "</td><td class=\"st-" + r[3] + "\">" + r[3] + "</td></tr>"; }); tb.innerHTML = h; })();
+
+// ---------- levels: Explore, Learn, Research ----------
+var LVKEY = "grazing-control-sim-level", ADVKEY = "grazing-control-sim-adv", EXKEY = "grazing-control-sim-explore";
+var level = "learn", ex = { rule: "grass", floorLb: 1350, quality: "good", challenge: null };
+try { var exs = JSON.parse(localStorage.getItem(EXKEY) || "null"); if (exs) { for (var kx in ex) if (exs[kx] !== undefined) ex[kx] = exs[kx]; } } catch (e) {}
+var LVNOTE = { explore: "For anyone: the idea in plain words.", learn: "For students: the full loop, with explanations.", research: "For researchers: everything, including field data and parameters." };
+var EXQ = { good: "low", fair: "medium", poor: "high" };
+function lb(kgHa) { return Math.round(kgHa * LB); }
+function n0(v) { return isFinite(v) ? Math.round(v).toLocaleString("en-US") : "n/a"; }
+function exSettings() {
+  var o = {}; for (var k in settings) o[k] = settings[k];
+  o.source = "sim"; o.mode = ex.rule === "calendar" ? "calendar" : "grass"; o.calendarDays = 4; o.dmin = 2; o.dmax = 7;
+  o.floor = Math.round(ex.floorLb / LB / 10) * 10; o.weather = ex.challenge === "dry" ? "dry" : "average";
+  o.bioSensor = "map"; o.noiseMap = o.noiseCamera = o.noiseFill = EXQ[ex.quality] || "low"; o.seed = 42; o.calibrate = false; o.useClips = false;
+  return G.sanitize(o);
+}
+function saveEx() { try { localStorage.setItem(EXKEY, JSON.stringify(ex)); } catch (e) {} }
+function setLevel(lv, init) {
+  if (["explore", "learn", "research"].indexOf(lv) < 0) lv = "learn";
+  var prev = init ? null : level;
+  if (lv === "explore" && prev !== "explore") { if (!init) { try { localStorage.setItem(ADVKEY, JSON.stringify(settings)); } catch (e) {} } settings = exSettings(); }
+  if (lv !== "explore" && prev === "explore") { try { var adv = JSON.parse(localStorage.getItem(ADVKEY) || "null"); settings = G.sanitize(adv || null); } catch (e) { settings = G.sanitize(null); } }
+  if (lv === "learn" && settings.source === "field") settings = G.sanitize(Object.assign({}, settings, { source: "sim" }));
+  if (lv !== "explore" && settings.mode === "grass") settings.mode = "dual";
+  level = lv; document.body.setAttribute("data-level", lv);
+  Array.prototype.forEach.call(document.querySelectorAll(".levels [data-level]"), function (b) { b.setAttribute("aria-pressed", b.getAttribute("data-level") === lv ? "true" : "false"); });
+  setText("lvNote", LVNOTE[lv]);
+  try { localStorage.setItem(LVKEY, lv); } catch (e) {}
+  if (!init) { if (lv !== "explore") save(); syncControls(); syncEx(); reset(); showInfo(isField() ? "field" : "about"); setStatus(lv === "explore" ? "Explore level. Press Play." : "Level changed."); }
+}
+Array.prototype.forEach.call(document.querySelectorAll(".levels [data-level]"), function (b) { b.addEventListener("click", function () { setLevel(b.getAttribute("data-level")); }); });
+function syncEx() {
+  Array.prototype.forEach.call(document.querySelectorAll("input[name=exRule]"), function (r) { r.checked = r.value === ex.rule; });
+  $("exFloor").value = ex.floorLb; $("exQuality").value = ex.quality;
+  setText("o-exFloor", n0(ex.floorLb) + " lb/ac");
+  $("exFloor").disabled = ex.rule === "calendar";
+}
+function exChanged() { saveEx(); syncEx(); settings = exSettings(); exShown = 0; reset(); }
+Array.prototype.forEach.call(document.querySelectorAll("input[name=exRule]"), function (r) { r.addEventListener("change", function () { ex.rule = r.value; exChanged(); setGoal(); }); });
+$("exFloor").addEventListener("input", function () { ex.floorLb = Number(this.value); exChanged(); });
+$("exQuality").addEventListener("change", function () { ex.quality = this.value; exChanged(); setGoal(); });
+var EXCH = {
+  healthy: { set: { rule: "grass", quality: "good" }, goal: "Challenge 1. Play the whole season. Try to finish with no paddock grazed below your target. Then try the calendar rule and compare the season report." },
+  dry: { set: { rule: "grass", quality: "good" }, goal: "Challenge 2. A dry summer: less rain and a little hotter. Watch the grass gauge and how often the herd moves. Does the grass keep up? What happens to the cattle?" },
+  sensor: { set: { rule: "grass", quality: "poor" }, goal: "Challenge 3. The drone is poor. Watch the red mark jump around the green bar. Count the moves made too early. Then switch the sensor to Good and play again." }
+};
+function setGoal() { $("exGoal").textContent = ex.challenge && EXCH[ex.challenge] ? EXCH[ex.challenge].goal : "Press Play to start. Watch the four boxes go around each morning."; }
+Array.prototype.forEach.call(document.querySelectorAll("[data-ex]"), function (b) {
+  b.addEventListener("click", function () { var c = b.getAttribute("data-ex"); ex.challenge = c; for (var k in EXCH[c].set) ex[k] = EXCH[c].set[k]; exChanged(); setGoal(); setStatus("Challenge loaded. Press Play."); });
+});
+var exShown = 0, exLines = [];
+function renderExplore() {
+  var s = sim; if (!s || isField()) return;
+  var S = s.settings, ob = s.obs, dec = s.lastDecision, tgt = S.floor, B = s.trueB[s.cur], Bh = ob.Bhat[s.cur];
+  var mo = ob.lastObs && ob.lastObs.map, movedToday = s.moves.length && dec && s.moves[s.moves.length - 1].day === dec.day;
+  var W = 0; s.herd.forEach(function (a) { W += a.BW; }); W /= s.herd.length;
+  setText("exA1", "Paddock " + (s.cur + 1) + ", day " + s.stay + " here");
+  setText("exA2", "Grass: " + n0(lb(B)) + " lb/acre (real)");
+  setText("exA3", "10 cattle, about " + n0(W * 2.2046) + " lb each");
+  setText("exB1", mo ? "Drone reading today:" : "No drone flight today.");
+  setText("exB2", mo ? n0(lb(mo.raw)) + " lb/acre" : "Best guess: " + n0(lb(Bh)) + " lb/acre");
+  setText("exB3", "Sensor quality: " + ex.quality);
+  setText("exC1", S.mode === "calendar" ? "Rule: move every 4 days" : "Rule: move below " + n0(lb(tgt)) + " lb/acre");
+  setText("exC2", !dec ? "Waiting for the first morning" : movedToday ? "Decision: MOVE" : "Decision: stay");
+  var lastMove = movedToday ? s.moves[s.moves.length - 1] : null;
+  setText("exC3", movedToday ? (lastMove.fired === "calendar" ? "Day 4 reached in paddock " + (lastMove.from + 1) : lastMove.fired === "max stay" ? "7 days is the longest stay" : "Paddock " + (lastMove.from + 1) + " looked short: " + n0(lb(dec.Bhat))) :
+    S.mode === "calendar" ? "Day " + s.stay + " of 4" : (dec && dec.grassFire ? "Short, but stay at least 2 days" : "Best guess " + n0(lb(Bh)) + " lb/acre"));
+  $("exC").classList.toggle("fire", !!movedToday);
+  setText("exD1", movedToday ? "Gate opened." : "Gate stays closed.");
+  setText("exD2", movedToday ? "Herd moved to paddock " + (s.cur + 1) + "." : "Herd keeps grazing.");
+  setText("exD3", movedToday && s.events.length ? "Left " + n0(lb(s.events[s.events.length - 1].postTrue)) + " lb/acre behind" : "");
+  // gauges (scale 0 to 3500 lb/ac)
+  var pc = function (v) { return Math.max(0, Math.min(100, v / 3500 * 100)) + "%"; };
+  $("exFill").style.width = pc(lb(B)); $("exTgt").style.left = pc(lb(tgt)); $("exEst").style.left = "calc(" + pc(lb(Bh)) + " - 1px)";
+  setText("exGrassTxt", n0(lb(B)) + " lb/acre (target " + n0(lb(tgt)) + ")");
+  var ts = s.trueSeries, wk = ts.length > 7 ? (ts[ts.length - 1].w - ts[ts.length - 8].w) * 2.2046 : NaN;
+  setText("exWtTxt", n0(W * 2.2046) + " lb" + (isFinite(wk) ? ", " + (wk >= 0 ? "gained " : "lost ") + n0(Math.abs(wk)) + " lb this week" : ""));
+  // messages for new grazing events
+  for (; exShown < s.events.length; exShown++) {
+    var e = s.events[exShown], m = s.moves[exShown], left = lb(e.postTrue), t = lb(tgt), cls, verdict;
+    if (e.postTrue < 0.8 * tgt) { cls = "bad"; verdict = "Too short. It will regrow slowly."; }
+    else if (e.postTrue < 0.9 * tgt) { cls = "warn"; verdict = "A bit too short."; }
+    else { cls = "good"; verdict = "Good, close to or above your target."; }
+    var early = m && m.wrong === "false" ? " The sensor said the grass was short, but it was not: moved too early." : m && m.fired === "max stay" ? " (Moved because 7 days is the longest stay.)" : "";
+    exLines.unshift("<div class=\"" + cls + "\">Day " + e.dayEnd + ": left paddock " + (e.paddock + 1) + " after " + e.days + " days with " + n0(left) + " lb/acre. " + verdict + early + "</div>");
+  }
+  if (exLines.length > 60) exLines.length = 60;
+  $("exMsg").innerHTML = exLines.length ? exLines.join("") : "<div class=\"muted\">Nothing yet. Press Play.</div>";
+  // season report
+  var ev = s.events.filter(function (x) { return x.days > 0; }), shortN = ev.filter(function (x) { return x.postTrue < 0.9 * tgt; }).length;
+  var early = s.moves.filter(function (x) { return x.wrong === "false"; }).length, gain = ts.length ? (W - ts[0].w) * 2.2046 : NaN;
+  var avgLeft = ev.length ? ev.reduce(function (a, x) { return a + x.postTrue; }, 0) / ev.length : NaN;
+  var health = !ev.length ? "not started" : shortN <= 0.1 * ev.length ? "good" : shortN <= 0.3 * ev.length ? "fair" : "poor";
+  $("exReport").innerHTML =
+    "<div><span>Day</span><span>" + s.day + " of " + G.BASE.seasonDays + "</span></div>" +
+    "<div><span>Moves</span><span>" + s.moves.length + "</span></div>" +
+    "<div><span>Average grass left</span><span>" + n0(lb(avgLeft)) + " lb/acre</span></div>" +
+    "<div><span>Paddocks grazed too short</span><span>" + shortN + " of " + ev.length + "</span></div>" +
+    "<div><span>Moves made too early</span><span>" + early + "</span></div>" +
+    "<div><span>Weight gained per animal</span><span>" + n0(gain) + " lb</span></div>" +
+    "<div><span><b>Grass health</b></span><span><b>" + health + "</b></span></div>";
+}
+
+// ---------- start ----------
+try { var wsv = JSON.parse(localStorage.getItem(WXKEY) || "null"); if (wsv && wsv.text) { $("wxUnits").value = wsv.units || "auto"; loadWx(wsv.text, true); } else renderWx(null, true); } catch (e) { renderWx(null, true); }
+$("csv").value = fieldText;
+(function () { var q = (location.search.match(/[?&]level=(explore|learn|research)/) || [])[1], sv = null; try { sv = localStorage.getItem(LVKEY); } catch (e) {} setLevel(q || sv || "learn", true); })();
+syncEx(); setGoal();
+syncControls(); reset(); showInfo(isField() ? "field" : "about");
+window.addEventListener("resize", function () { drawPlots(); });
+})();
+</script>
+</body>
+</html>

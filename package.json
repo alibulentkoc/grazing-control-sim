@@ -1,0 +1,8 @@
+{
+  "name": "grazing-control-sim",
+  "version": "1.4.0",
+  "description": "Live control-loop simulation of rotational grazing with field-data replay. Design-stage teaching tool, not field results.",
+  "license": "MIT",
+  "private": true,
+  "scripts": { "build": "node tools/build.js", "test": "node test/test.js" }
+}
